@@ -4,55 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Overwatch Battle Card</title>
-    <style>
-        /* Add your CSS styles here to mimic the official design */
-        body {
-            font-family: Arial, sans-serif;
-            background: #121212;
-            color: #fff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-        .battle-card {
-            background: #1c1c1c;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
-            width: 300px;
-            text-align: center;
-        }
-        .player-icon {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            margin-bottom: 10px;
-            border: 3px solid #ffa726;
-        }
-        .player-name {
-            font-size: 1.5em;
-            font-weight: bold;
-        }
-        .player-title {
-            color: #ffa726;
-        }
-        .stats {
-            margin-top: 15px;
-            text-align: left;
-        }
-        .stats div {
-            margin: 5px 0;
-        }
-    </style>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="battle-card">
-        <img id="playerIcon" class="player-icon" src="" alt="Player Icon">
-        <div class="player-name" id="playerName"></div>
-        <div class="player-title" id="playerTitle">Level <span id="playerLevel"></span></div>
-        <div class="stats">
+    <div class="player-card">
+        <div class="player-namecard" id="nameplate"></div>
+        <img class="player-icon" id="playerIcon" src="" alt="Player Icon">
+        <span class="player-text">
+            <span class="player-name" id="playerName"></span>
+            <span class="player-title" id="playerTitle">Level <span id="playerLevel"></span></span>
+        </span>
+        <div class="player-stats">
             <div>Rank: <img id="rankIcon" src="" alt="Rank Icon" style="height: 20px;"> <span id="rank"></span></div>
             <div>Games Won: <span id="gamesWon"></span></div>
         </div>
