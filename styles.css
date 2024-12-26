@@ -1,7 +1,5 @@
 body {
-    font-family: "Overwatch", Arial, sans-serif;
-    background: #0d1117;
-    color: #fff;
+    background-color: #0d1117;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -9,15 +7,7 @@ body {
     margin: 0;
 }
 
-.player-stats {
-    margin-top: 20px;
-    padding: 10px;
-    font-size: 0.9em;
-    line-height: 1.6;
-    text-align: left;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
-    width: 90%;
-    margin-left: auto;
-    margin-right: auto;
+.results-container {
+    width: 100%;
+    max-width: 400px;
 }
