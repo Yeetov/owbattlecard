@@ -73,10 +73,10 @@
             const data = await response.json();
 
             // Render the player data
-            document.getElementById('nameplate').style.backgroundImage = `url(${data.icon})`;
+            document.getElementById('nameplate').style.backgroundImage = `url(${data.icon})`; // Use icon as background
             document.getElementById('playerIcon').src = data.icon;
             document.getElementById('playerName').innerText = data.name;
-            document.getElementById('playerTitle').innerText = data.prestige ? `Level ${data.prestige}` : "No Title";
+            document.getElementById('playerTitle').innerText = "Level " + (data.competitiveStats ? data.competitiveStats.season : "N/A");
         } catch (error) {
             console.error('Error fetching player data:', error);
         }
