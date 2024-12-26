@@ -8,17 +8,20 @@ async function fetchBattleCard(battletag, platform = 'pc', region = 'eu') {
         const data = await response.json();
 
         // Populate card
-        document.getElementById('nameplate').style.backgroundImage = `url(${data.levelIcon})`;
-        document.getElementById('playerIcon').src = data.icon;
-        document.getElementById('playerName').textContent = data.name;
-        document.getElementById('playerLevel').textContent = data.level;
-        document.getElementById('rank').textContent = data.rating || 'N/A';
-        document.getElementById('rankIcon').src = data.ratingIcon || '';
+        document.getElementById('nameplate').style.setProperty(
+            '--bg-namePlate',
+            `url(${data.levelIcon || 'https://example.com/default-background.png'})`
+        );
+        document.getElementById('playerIcon').src = data.icon || 'https://example.com/default-icon.png';
+        document.getElementById('playerName').textContent = data.name || 'Unknown Player';
+        document.getElementById('playerTitle').textContent = `Level ${data.level || '0'}`;
+        document.getElementById('rank').textContent = data.rating || 'Unranked';
+        document.getElementById('rankIcon').src = data.ratingIcon || 'https://example.com/default-rank-icon.png';
         document.getElementById('gamesWon').textContent = data.gamesWon || '0';
     } catch (error) {
         console.error('Error fetching battle card:', error);
     }
 }
 
-// Fetch data for your battletag
+// Fetch your card dynamically
 fetchBattleCard('Aarontendo#2585');
