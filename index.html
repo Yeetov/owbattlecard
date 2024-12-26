@@ -5,20 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Overwatch Battle Card</title>
     <link rel="stylesheet" href="https://static.playoverwatch.com/career-2ae69e770c.css">
-    <link rel="stylesheet" href="custom.css">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="player-card player-card--withTitle player-card--withNamePlate">
-        <div class="player-namecard" id="nameplate" style="--bg-namePlate:url('https://example.com/background.png');"></div>
-        <blz-image class="player-icon" id="playerIcon" src="https://example.com/icon.png" alt="Player Icon"></blz-image>
-        <span class="player-text">
-            <span class="player-name" id="playerName" title="Player Name">PlayerName</span>
-            <span class="player-title" id="playerTitle" title="Title">Player Title</span>
-        </span>
-        <div class="player-stats">
-            <div>Rank: <img id="rankIcon" src="https://example.com/rank-icon.png" alt="Rank Icon" style="height: 20px;"> <span id="rank">2000</span></div>
-            <div>Games Won: <span id="gamesWon">500</span></div>
-        </div>
+    <div class="results-container">
+        <a class="player-card player-card--withTitle player-card--withNamePlate" id="battleCard" href="#">
+            <div class="player-namecard" id="nameplate"></div>
+            <blz-image class="player-icon" id="playerIcon" src="" alt="Player Icon"></blz-image>
+            <blz-icon class="player-badge-lock" icon="bn-lock-filled" data-visibility-public="true"></blz-icon>
+            <span class="player-text">
+                <span class="player-name" id="playerName" title=""></span>
+                <span class="player-title" id="playerTitle" title=""></span>
+            </span>
+        </a>
     </div>
     <script src="script.js"></script>
 </body>
