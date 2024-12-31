@@ -9,8 +9,7 @@
         body {
             font-family: Arial, sans-serif;
             margin: 0;
-            background-color: #1c1c1c;
-            color: #fff;
+            background-color: #f3f3f3;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -23,43 +22,62 @@
         }
         .player-card {
             position: relative;
-            width: calc(1280px + 256px); /* Extra space for avatar overlap */
-            height: 256px;
-            border-radius: 10px;
-            background: var(--bg-namePlate) no-repeat center / cover;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
             display: flex;
             align-items: center;
-            overflow: visible; /* Ensure the avatar isn't cut off */
+            background: var(--bg-namePlate) no-repeat center / cover;
+            width: 600px;
+            height: 150px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            padding-left: 170px; /* Space for the avatar */
+            overflow: hidden;
+        }
+        .player-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.7); /* White overlay with 70% opacity */
+            z-index: 1; /* Place behind avatar and text */
         }
         .player-icon {
             position: absolute;
-            left: 0; /* Start avatar on the far left */
+            left: 20px;
             top: 50%;
-            transform: translate(-50%, -50%);
-            width: 256px; /* Matches the banner height */
-            height: 256px;
-            border-radius: 50%;
-            border: 5px solid #fff;
+            transform: translateY(-50%);
+            width: 130px;
+            height: 130px;
+            border: 3px solid #fff;
             background-color: #000;
+            z-index: 2; /* Place above the overlay */
         }
         .player-text {
-            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
-            margin-left: 300px; /* Adjusted for avatar space */
+            position: relative;
+            z-index: 3; /* Ensures text appears above the overlay */
+            color: #000;
+            text-shadow: 1px 1px 3px rgba(255, 255, 255, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            height: 100%;
         }
         .player-name {
-            font-size: 30px;
+            font-size: 24px;
             font-weight: bold;
+            margin: 0;
         }
         .player-title {
-            font-size: 20px;
-            font-style: italic;
+            font-size: 16px;
+            color: #555;
+            margin: 0;
         }
     </style>
 </head>
 <body>
 <div class="results-container">
     <a id="battleCard" class="player-card player-card--withTitle player-card--withNamePlate">
+        <div class="player-overlay"></div> <!-- Overlay placed behind everything -->
         <img id="playerIcon" class="player-icon" src="" alt="Player Icon">
         <div class="player-text">
             <div id="playerName" class="player-name">Username</div>
@@ -90,7 +108,7 @@
         // Map data to card
         document.getElementById('battleCard').style.setProperty('--bg-namePlate', `url(${data.nameplate})`);
         document.getElementById('playerIcon').src = data.icon;
-        document.getElementById('playerName').innerText = data.name;
+        document.getElementById('playerName').innerText = data.name.toUpperCase();
         document.getElementById('playerTitle').innerText = data.title;
     }
 
