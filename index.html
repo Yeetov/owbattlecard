@@ -14,6 +14,7 @@
             justify-content: center;
             align-items: center;
             height: 100vh;
+            flex-direction: column;
         }
         .results-container {
             display: flex;
@@ -29,7 +30,7 @@
             height: 150px;
             border-radius: 10px;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-            padding-left: 170px; /* Space for the avatar */
+            padding-left: 170px;
             overflow: hidden;
         }
         .player-overlay {
@@ -72,8 +73,24 @@
             color: #555;
             margin: 0;
         }
-        #show-url-btn {
-            margin-top: 20px;
+        #embed-code-section {
+            margin-top: 30px;
+            text-align: center;
+        }
+        #embed-code {
+            width: 90%;
+            height: 100px;
+            margin-top: 10px;
+            padding: 10px;
+            font-family: monospace;
+            background-color: #f3f3f3;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        #copy-btn {
+            margin-top: 10px;
             padding: 10px 20px;
             background-color: #008cba;
             color: white;
@@ -81,16 +98,12 @@
             border-radius: 5px;
             cursor: pointer;
         }
-        #image-link {
-            margin-top: 20px;
-            display: none;
-        }
     </style>
 </head>
 <body>
 <div class="results-container">
     <a id="battleCard" class="player-card player-card--withTitle player-card--withNamePlate">
-        <div class="player-overlay"></div> <!-- Overlay -->
+        <div class="player-overlay"></div>
         <img id="playerIcon" class="player-icon" src="" alt="Player Icon">
         <div class="player-text">
             <div id="playerName" class="player-name">Username</div>
@@ -99,13 +112,15 @@
     </a>
 </div>
 
-<button id="show-url-btn">Generate Image URL</button>
-<p id="image-link"></p>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js"></script>
+<div id="embed-code-section">
+    <label for="embed-code">Copy this embed code to share the player card:</label>
+    <textarea id="embed-code" readonly></textarea>
+    <button id="copy-btn">Copy Embed Code</button>
+</div>
 
 <script>
     async function fetchPlayerData() {
+        // Example: Static data to simulate API response for Overwatch 2
         const data = {
             "competitiveStats": {"season": 10},
             "endorsement": 3,
@@ -122,24 +137,26 @@
             "title": "Cupid's Arrow"
         };
 
+        // Map data to card
         document.getElementById('battleCard').style.setProperty('--bg-namePlate', `url(${data.nameplate})`);
         document.getElementById('playerIcon').src = data.icon;
         document.getElementById('playerName').innerText = data.name.toUpperCase();
         document.getElementById('playerTitle').innerText = data.title;
+
+        // Embed code to be copied
+        const embedCode = `<iframe src="YOUR_WEBSITE_URL?player=${data.name}" width="600" height="150" frameborder="0" style="border:0;"></iframe>`;
+        document.getElementById('embed-code').value = embedCode;
     }
 
+    // Call the function to populate the card
     fetchPlayerData();
 
-    document.getElementById('show-url-btn').addEventListener('click', function() {
-        html2canvas(document.getElementById('battleCard')).then(function(canvas) {
-            // Convert the canvas to a data URL
-            const dataUrl = canvas.toDataURL('image/png');
-            
-            // Show the URL as a link
-            const imageLink = document.getElementById('image-link');
-            imageLink.style.display = 'block';
-            imageLink.innerHTML = `<a href="${dataUrl}" target="_blank">Click here to view the image</a>`;
-        });
+    // Add event listener to the copy button
+    document.getElementById('copy-btn').addEventListener('click', function() {
+        const embedCodeTextArea = document.getElementById('embed-code');
+        embedCodeTextArea.select();
+        document.execCommand('copy'); // Copy to clipboard
+        alert('Embed code copied to clipboard!');
     });
 </script>
 </body>
