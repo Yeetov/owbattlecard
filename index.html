@@ -98,7 +98,17 @@
             border-radius: 5px;
             cursor: pointer;
         }
+        #download-btn {
+            margin-top: 10px;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js"></script>
 </head>
 <body>
 <div class="results-container">
@@ -117,6 +127,8 @@
     <textarea id="embed-code" readonly></textarea>
     <button id="copy-btn">Copy Embed Code</button>
 </div>
+
+<button id="download-btn">Download as Image</button>
 
 <script>
     async function fetchPlayerData() {
@@ -157,6 +169,18 @@
         embedCodeTextArea.select();
         document.execCommand('copy'); // Copy to clipboard
         alert('Embed code copied to clipboard!');
+    });
+
+    // Add event listener to the download button
+    document.getElementById('download-btn').addEventListener('click', function() {
+        // Use html2canvas to capture the results-container as an image
+        html2canvas(document.querySelector('.results-container')).then(function(canvas) {
+            // Create a download link
+            const link = document.createElement('a');
+            link.download = 'overwatch-player-card.png'; // Image file name
+            link.href = canvas.toDataURL(); // Convert canvas to image data URL
+            link.click(); // Trigger the download
+        });
     });
 </script>
 </body>
