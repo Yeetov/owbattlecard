@@ -173,22 +173,43 @@
 
     // Add event listener to the download button
     document.getElementById('download-btn').addEventListener('click', function() {
-        // Ensure that the background image is included by setting it inline
-        const playerCard = document.querySelector('.player-card');
-        playerCard.style.backgroundImage = playerCard.style.getPropertyValue('--bg-namePlate');
+        const images = document.querySelectorAll('img');
+        let loadedImagesCount = 0;
 
-        // Use html2canvas to capture the results-container as an image
-        html2canvas(document.querySelector('.results-container'), {
-            backgroundColor: null,  // Prevent white background
-            logging: true,  // For debugging
-            useCORS: true   // Ensure external images are loaded
-        }).then(function(canvas) {
-            // Create a download link
-            const link = document.createElement('a');
-            link.download = 'overwatch-player-card.png'; // Image file name
-            link.href = canvas.toDataURL(); // Convert canvas to image data URL
-            link.click(); // Trigger the download
+        images.forEach((img) => {
+            if (img.complete) {
+                loadedImagesCount++;
+            } else {
+                img.onload = function() {
+                    loadedImagesCount++;
+                    if (loadedImagesCount === images.length) {
+                        captureScreenshot();
+                    }
+                };
+            }
         });
+
+        if (loadedImagesCount === images.length) {
+            captureScreenshot();
+        }
+
+        // Function to capture the screenshot
+        function captureScreenshot() {
+            console.log("Capturing Screenshot..."); // Log for debugging
+            html2canvas(document.querySelector('.results-container'), {
+                backgroundColor: null,
+                logging: true,
+                useCORS: true
+            }).then(function(canvas) {
+                const link = document.createElement('a');
+                link.download = 'overwatch-player-card.png';
+                link.href = canvas.toDataURL();
+                link.click();
+                console.log("Download triggered!");
+            }).catch(function(error) {
+                console.error("Error capturing screenshot:", error);
+            });
+        }
     });
 </script>
 </body>
