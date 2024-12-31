@@ -108,7 +108,6 @@
             cursor: pointer;
         }
     </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js"></script>
 </head>
 <body>
 <div class="results-container">
@@ -129,6 +128,19 @@
 </div>
 
 <button id="download-btn">Download as Image</button>
+
+<!-- Service Worker Registration -->
+<script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/service-worker.js').then((registration) => {
+                console.log('Service Worker registered with scope:', registration.scope);
+            }).catch((error) => {
+                console.error('Service Worker registration failed:', error);
+            });
+        });
+    }
+</script>
 
 <script>
     async function fetchPlayerData() {
@@ -156,7 +168,7 @@
         document.getElementById('playerTitle').innerText = data.title;
 
         // Embed code to be copied
-        const embedCode = `<iframe src="YOUR_WEBSITE_URL?player=${data.name}" width="600" height="150" frameborder="0" style="border:0;"></iframe>`;
+        const embedCode = `<iframe src="https://yeetov.github.io/owbattlecard?player=${data.name}" width="600" height="150" frameborder="0" style="border:0;"></iframe>`;
         document.getElementById('embed-code').value = embedCode;
     }
 
@@ -212,5 +224,17 @@
         }
     });
 </script>
+
+<!-- Service Worker Script (Embedded) -->
+<script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready.then(function(registration) {
+            registration.active.postMessage({
+                type: 'CACHE_IMAGES'
+            });
+        });
+    }
+</script>
+
 </body>
 </html>
