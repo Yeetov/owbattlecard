@@ -109,16 +109,30 @@
         }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js"></script>
-    <script>
-        // Service worker registration
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('service-worker.js').then(function(registration) {
-                console.log('Service Worker registered with scope: ', registration.scope);
-            }).catch(function(error) {
-                console.log('Service Worker registration failed: ', error);
-            });
-        }
+</head>
+<body>
+<div class="results-container">
+    <a id="battleCard" class="player-card player-card--withTitle player-card--withNamePlate">
+        <div class="player-overlay"></div>
+        <img id="playerIcon" class="player-icon" src="" alt="Player Icon">
+        <div class="player-text">
+            <div id="playerName" class="player-name">Username</div>
+            <div id="playerTitle" class="player-title">Player Title</div>
+        </div>
+    </a>
+</div>
 
+<div id="embed-code-section">
+    <label for="embed-code">Copy this embed code to share the player card:</label>
+    <textarea id="embed-code" readonly></textarea>
+    <button id="copy-btn">Copy Embed Code</button>
+</div>
+
+<button id="download-btn">Download as Image</button>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Fetch player data and populate the card
         async function fetchPlayerData() {
             // Example: Static data to simulate API response for Overwatch 2
             const data = {
@@ -138,17 +152,34 @@
             };
 
             // Map data to card
-            document.getElementById('battleCard').style.setProperty('--bg-namePlate', `url(${data.nameplate})`);
-            document.getElementById('playerIcon').src = data.icon;
-            document.getElementById('playerName').innerText = data.name.toUpperCase();
-            document.getElementById('playerTitle').innerText = data.title;
+            const battleCard = document.getElementById('battleCard');
+            if (battleCard) {
+                battleCard.style.setProperty('--bg-namePlate', `url(${data.nameplate})`);
+            }
+
+            const playerIcon = document.getElementById('playerIcon');
+            if (playerIcon) {
+                playerIcon.src = data.icon;
+            }
+
+            const playerName = document.getElementById('playerName');
+            if (playerName) {
+                playerName.innerText = data.name.toUpperCase();
+            }
+
+            const playerTitle = document.getElementById('playerTitle');
+            if (playerTitle) {
+                playerTitle.innerText = data.title;
+            }
 
             // Embed code to be copied
             const embedCode = `<iframe src="YOUR_WEBSITE_URL?player=${data.name}" width="600" height="150" frameborder="0" style="border:0;"></iframe>`;
-            document.getElementById('embed-code').value = embedCode;
+            const embedCodeTextarea = document.getElementById('embed-code');
+            if (embedCodeTextarea) {
+                embedCodeTextarea.value = embedCode;
+            }
         }
 
-        // Call the function to populate the card
         fetchPlayerData();
 
         // Add event listener to the copy button
@@ -184,42 +215,16 @@
             // Function to capture the screenshot
             function captureScreenshot() {
                 console.log("Capturing Screenshot..."); // Log for debugging
-                html2canvas(document.querySelector('.results-container'), {
-                    backgroundColor: null,
-                    logging: true,
-                    useCORS: true
-                }).then(function(canvas) {
-                    const link = document.createElement('a');
-                    link.download = 'overwatch-player-card.png';
-                    link.href = canvas.toDataURL();
-                    link.click();
-                    console.log("Download triggered!");
-                }).catch(function(error) {
-                    console.error("Error capturing screenshot:", error);
+                html2canvas(document.querySelector("#battleCard")).then(function(canvas) {
+                    const dataURL = canvas.toDataURL();
+                    const a = document.createElement("a");
+                    a.href = dataURL;
+                    a.download = "player_card.png";
+                    a.click();
                 });
             }
         });
-    </script>
-</head>
-<body>
-<div class="results-container">
-    <a id="battleCard" class="player-card player-card--withTitle player-card--withNamePlate">
-        <div class="player-overlay"></div>
-        <img id="playerIcon" class="player-icon" src="" alt="Player Icon">
-        <div class="player-text">
-            <div id="playerName" class="player-name">Username</div>
-            <div id="playerTitle" class="player-title">Player Title</div>
-        </div>
-    </a>
-</div>
-
-<div id="embed-code-section">
-    <label for="embed-code">Copy this embed code to share the player card:</label>
-    <textarea id="embed-code" readonly></textarea>
-    <button id="copy-btn">Copy Embed Code</button>
-</div>
-
-<button id="download-btn">Download as Image</button>
-
+    });
+</script>
 </body>
 </html>
