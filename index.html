@@ -38,8 +38,8 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(255, 255, 255, 0.7); /* White overlay with 70% opacity */
-            z-index: 1; /* Place behind avatar and text */
+            background: linear-gradient(to right, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0) 100%);
+            z-index: 1;
         }
         .player-icon {
             position: absolute;
@@ -50,11 +50,11 @@
             height: 130px;
             border: 3px solid #fff;
             background-color: #000;
-            z-index: 2; /* Place above the overlay */
+            z-index: 2;
         }
         .player-text {
             position: relative;
-            z-index: 3; /* Ensures text appears above the overlay */
+            z-index: 3;
             color: #000;
             text-shadow: 1px 1px 3px rgba(255, 255, 255, 0.8);
             display: flex;
@@ -72,12 +72,25 @@
             color: #555;
             margin: 0;
         }
+        #show-url-btn {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #008cba;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #image-link {
+            margin-top: 20px;
+            display: none;
+        }
     </style>
 </head>
 <body>
 <div class="results-container">
     <a id="battleCard" class="player-card player-card--withTitle player-card--withNamePlate">
-        <div class="player-overlay"></div> <!-- Overlay placed behind everything -->
+        <div class="player-overlay"></div> <!-- Overlay -->
         <img id="playerIcon" class="player-icon" src="" alt="Player Icon">
         <div class="player-text">
             <div id="playerName" class="player-name">Username</div>
@@ -86,9 +99,13 @@
     </a>
 </div>
 
+<button id="show-url-btn">Generate Image URL</button>
+<p id="image-link"></p>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js"></script>
+
 <script>
     async function fetchPlayerData() {
-        // Example: Static data to simulate API response for Overwatch 2
         const data = {
             "competitiveStats": {"season": 10},
             "endorsement": 3,
@@ -105,15 +122,25 @@
             "title": "Cupid's Arrow"
         };
 
-        // Map data to card
         document.getElementById('battleCard').style.setProperty('--bg-namePlate', `url(${data.nameplate})`);
         document.getElementById('playerIcon').src = data.icon;
         document.getElementById('playerName').innerText = data.name.toUpperCase();
         document.getElementById('playerTitle').innerText = data.title;
     }
 
-    // Call the function to populate the card
     fetchPlayerData();
+
+    document.getElementById('show-url-btn').addEventListener('click', function() {
+        html2canvas(document.getElementById('battleCard')).then(function(canvas) {
+            // Convert the canvas to a data URL
+            const dataUrl = canvas.toDataURL('image/png');
+            
+            // Show the URL as a link
+            const imageLink = document.getElementById('image-link');
+            imageLink.style.display = 'block';
+            imageLink.innerHTML = `<a href="${dataUrl}" target="_blank">Click here to view the image</a>`;
+        });
+    });
 </script>
 </body>
 </html>
