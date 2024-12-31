@@ -23,20 +23,20 @@
         }
         .player-card {
             position: relative;
-            width: 1280px;
+            width: calc(1280px + 256px); /* Extra space for avatar overlap */
             height: 256px;
             border-radius: 10px;
             background: var(--bg-namePlate) no-repeat center / cover;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
             display: flex;
             align-items: center;
-            padding-left: 100px; /* Add space to account for overlapping avatar */
+            overflow: visible; /* Ensure the avatar isn't cut off */
         }
         .player-icon {
             position: absolute;
-            left: -50px; /* Overlap the avatar on the banner */
+            left: 0; /* Start avatar on the far left */
             top: 50%;
-            transform: translateY(-50%);
+            transform: translate(-50%, -50%);
             width: 256px; /* Matches the banner height */
             height: 256px;
             border-radius: 50%;
@@ -45,6 +45,7 @@
         }
         .player-text {
             text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
+            margin-left: 300px; /* Adjusted for avatar space */
         }
         .player-name {
             font-size: 30px;
