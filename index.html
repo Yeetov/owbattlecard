@@ -30,14 +30,18 @@
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
             display: flex;
             align-items: center;
+            padding-left: 100px; /* Add space to account for overlapping avatar */
         }
         .player-icon {
-            flex-shrink: 0;
-            width: 256px; /* Matches banner height for 1:1 ratio */
+            position: absolute;
+            left: -50px; /* Overlap the avatar on the banner */
+            top: 50%;
+            transform: translateY(-50%);
+            width: 256px; /* Matches the banner height */
             height: 256px;
             border-radius: 50%;
             border: 5px solid #fff;
-            margin: 0 20px;
+            background-color: #000;
         }
         .player-text {
             text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
@@ -78,14 +82,15 @@
             "quickPlayStats": {"games": {"played": 78, "won": 33}},
             "private": false,
             "ratings": null,
-            "nameplate": "https://d15f34w2p8l1cc.cloudfront.net/overwatch/3fa9190e08a7903c0f4f303e0100fe4dbcfe61f3a42e426000adf871d61e8e94.png"
+            "nameplate": "https://d15f34w2p8l1cc.cloudfront.net/overwatch/3fa9190e08a7903c0f4f303e0100fe4dbcfe61f3a42e426000adf871d61e8e94.png",
+            "title": "Cupid's Arrow"
         };
 
         // Map data to card
         document.getElementById('battleCard').style.setProperty('--bg-namePlate', `url(${data.nameplate})`);
         document.getElementById('playerIcon').src = data.icon;
         document.getElementById('playerName').innerText = data.name;
-        document.getElementById('playerTitle').innerText = `Endorsement Level ${data.endorsement}`;
+        document.getElementById('playerTitle').innerText = data.title;
     }
 
     // Call the function to populate the card
