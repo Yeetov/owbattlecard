@@ -3,88 +3,95 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Overwatch Battle Card</title>
+    <title>Overwatch 2 Battle Card</title>
     <link rel="stylesheet" href="https://static.playoverwatch.com/career-2ae69e770c.css">
-    <link rel="stylesheet" href="https://static.playoverwatch.com/global-fc92acb43c.css">
     <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background-color: #1c1c1c;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
         .results-container {
             display: flex;
             justify-content: center;
-            padding: 20px;
+            align-items: center;
         }
         .player-card {
-            display: inline-block;
             position: relative;
-            width: 250px;
-            height: 350px;
-            background: #f1f1f1;
+            width: 300px;
+            height: 400px;
             border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        }
-        .player-namecard {
-            width: 100%;
-            height: 100px;
-            background-size: cover;
-            background-position: center;
+            background: var(--bg-namePlate) no-repeat center / cover;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
         }
         .player-icon {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
             position: absolute;
             top: 10px;
             left: 10px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 3px solid #fff;
         }
         .player-text {
             position: absolute;
             bottom: 10px;
             left: 10px;
-            color: white;
-            font-size: 14px;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
         }
         .player-name {
+            font-size: 20px;
             font-weight: bold;
         }
         .player-title {
+            font-size: 16px;
             font-style: italic;
         }
     </style>
 </head>
 <body>
-
 <div class="results-container">
-    <div id="battleCard" class="player-card">
-        <div class="player-namecard" id="nameplate"></div>
+    <a id="battleCard" class="player-card player-card--withTitle player-card--withNamePlate">
         <img id="playerIcon" class="player-icon" src="" alt="Player Icon">
         <span class="player-text">
             <span id="playerName" class="player-name">Username</span><br>
             <span id="playerTitle" class="player-title">Player Title</span>
         </span>
-    </div>
+    </a>
 </div>
 
 <script>
-    // Function to fetch player data and render the battle card
-    async function fetchPlayerData(platform, region, battletag) {
-        const apiUrl = `https://ow-api.com/v1/stats/${platform}/${region}/${battletag}/profile`;
-        
-        try {
-            const response = await fetch(apiUrl);
-            const data = await response.json();
+    async function fetchPlayerData() {
+        // Example: Static data to simulate API response for Overwatch 2
+        const data = {
+            "competitiveStats": {"season": 10},
+            "endorsement": 3,
+            "endorsementIcon": "https://static.playoverwatch.com/img/pages/career/icons/endorsement/3-8ccb5f0aef.svg#icon",
+            "gamesLost": 45,
+            "gamesPlayed": 78,
+            "gamesWon": 33,
+            "icon": "https://d15f34w2p8l1cc.cloudfront.net/overwatch/33c15d3ce7b4d3b9bd03234faa7c7806d7e28bfc9a9f3fe7014b5986c9453d5c.png",
+            "name": "Aarontendo",
+            "quickPlayStats": {"games": {"played": 78, "won": 33}},
+            "private": false,
+            "ratings": null,
+            "nameplate": "https://d15f34w2p8l1cc.cloudfront.net/overwatch/3fa9190e08a7903c0f4f303e0100fe4dbcfe61f3a42e426000adf871d61e8e94.png"
+        };
 
-            // Render the player data
-            document.getElementById('nameplate').style.backgroundImage = `url(${data.icon})`; // Use icon as background
-            document.getElementById('playerIcon').src = data.icon;
-            document.getElementById('playerName').innerText = data.name;
-            document.getElementById('playerTitle').innerText = "Level " + (data.competitiveStats ? data.competitiveStats.season : "N/A");
-        } catch (error) {
-            console.error('Error fetching player data:', error);
-        }
+        // Map data to card
+        document.getElementById('battleCard').style.setProperty('--bg-namePlate', `url(${data.nameplate})`);
+        document.getElementById('playerIcon').src = data.icon;
+        document.getElementById('playerName').innerText = data.name;
+        document.getElementById('playerTitle').innerText = `Endorsement Level ${data.endorsement}`;
     }
 
-    // Example: Fetch data for a player (replace with actual battletag)
-    fetchPlayerData('pc', 'us', 'Aarontendo-2585'); // Replace with the desired battletag
+    // Call the function to populate the card
+    fetchPlayerData();
 </script>
-
 </body>
 </html>
