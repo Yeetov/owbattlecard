@@ -108,6 +108,98 @@
             cursor: pointer;
         }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js"></script>
+    <script>
+        // Service worker registration
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js').then(function(registration) {
+                console.log('Service Worker registered with scope: ', registration.scope);
+            }).catch(function(error) {
+                console.log('Service Worker registration failed: ', error);
+            });
+        }
+
+        async function fetchPlayerData() {
+            // Example: Static data to simulate API response for Overwatch 2
+            const data = {
+                "competitiveStats": {"season": 10},
+                "endorsement": 3,
+                "endorsementIcon": "https://static.playoverwatch.com/img/pages/career/icons/endorsement/3-8ccb5f0aef.svg#icon",
+                "gamesLost": 45,
+                "gamesPlayed": 78,
+                "gamesWon": 33,
+                "icon": "https://d15f34w2p8l1cc.cloudfront.net/overwatch/33c15d3ce7b4d3b9bd03234faa7c7806d7e28bfc9a9f3fe7014b5986c9453d5c.png",
+                "name": "Aarontendo",
+                "quickPlayStats": {"games": {"played": 78, "won": 33}},
+                "private": false,
+                "ratings": null,
+                "nameplate": "https://d15f34w2p8l1cc.cloudfront.net/overwatch/3fa9190e08a7903c0f4f303e0100fe4dbcfe61f3a42e426000adf871d61e8e94.png",
+                "title": "Cupid's Arrow"
+            };
+
+            // Map data to card
+            document.getElementById('battleCard').style.setProperty('--bg-namePlate', `url(${data.nameplate})`);
+            document.getElementById('playerIcon').src = data.icon;
+            document.getElementById('playerName').innerText = data.name.toUpperCase();
+            document.getElementById('playerTitle').innerText = data.title;
+
+            // Embed code to be copied
+            const embedCode = `<iframe src="YOUR_WEBSITE_URL?player=${data.name}" width="600" height="150" frameborder="0" style="border:0;"></iframe>`;
+            document.getElementById('embed-code').value = embedCode;
+        }
+
+        // Call the function to populate the card
+        fetchPlayerData();
+
+        // Add event listener to the copy button
+        document.getElementById('copy-btn').addEventListener('click', function() {
+            const embedCodeTextArea = document.getElementById('embed-code');
+            embedCodeTextArea.select();
+            document.execCommand('copy'); // Copy to clipboard
+            alert('Embed code copied to clipboard!');
+        });
+
+        // Add event listener to the download button
+        document.getElementById('download-btn').addEventListener('click', function() {
+            const images = document.querySelectorAll('img');
+            let loadedImagesCount = 0;
+
+            images.forEach((img) => {
+                if (img.complete) {
+                    loadedImagesCount++;
+                } else {
+                    img.onload = function() {
+                        loadedImagesCount++;
+                        if (loadedImagesCount === images.length) {
+                            captureScreenshot();
+                        }
+                    };
+                }
+            });
+
+            if (loadedImagesCount === images.length) {
+                captureScreenshot();
+            }
+
+            // Function to capture the screenshot
+            function captureScreenshot() {
+                console.log("Capturing Screenshot..."); // Log for debugging
+                html2canvas(document.querySelector('.results-container'), {
+                    backgroundColor: null,
+                    logging: true,
+                    useCORS: true
+                }).then(function(canvas) {
+                    const link = document.createElement('a');
+                    link.download = 'overwatch-player-card.png';
+                    link.href = canvas.toDataURL();
+                    link.click();
+                    console.log("Download triggered!");
+                }).catch(function(error) {
+                    console.error("Error capturing screenshot:", error);
+                });
+            }
+        });
+    </script>
 </head>
 <body>
 <div class="results-container">
@@ -128,113 +220,6 @@
 </div>
 
 <button id="download-btn">Download as Image</button>
-
-<!-- Service Worker Registration -->
-<script>
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/service-worker.js').then((registration) => {
-                console.log('Service Worker registered with scope:', registration.scope);
-            }).catch((error) => {
-                console.error('Service Worker registration failed:', error);
-            });
-        });
-    }
-</script>
-
-<script>
-    async function fetchPlayerData() {
-        // Example: Static data to simulate API response for Overwatch 2
-        const data = {
-            "competitiveStats": {"season": 10},
-            "endorsement": 3,
-            "endorsementIcon": "https://static.playoverwatch.com/img/pages/career/icons/endorsement/3-8ccb5f0aef.svg#icon",
-            "gamesLost": 45,
-            "gamesPlayed": 78,
-            "gamesWon": 33,
-            "icon": "https://d15f34w2p8l1cc.cloudfront.net/overwatch/33c15d3ce7b4d3b9bd03234faa7c7806d7e28bfc9a9f3fe7014b5986c9453d5c.png",
-            "name": "Aarontendo",
-            "quickPlayStats": {"games": {"played": 78, "won": 33}},
-            "private": false,
-            "ratings": null,
-            "nameplate": "https://d15f34w2p8l1cc.cloudfront.net/overwatch/3fa9190e08a7903c0f4f303e0100fe4dbcfe61f3a42e426000adf871d61e8e94.png",
-            "title": "Cupid's Arrow"
-        };
-
-        // Map data to card
-        document.getElementById('battleCard').style.setProperty('--bg-namePlate', `url(${data.nameplate})`);
-        document.getElementById('playerIcon').src = data.icon;
-        document.getElementById('playerName').innerText = data.name.toUpperCase();
-        document.getElementById('playerTitle').innerText = data.title;
-
-        // Embed code to be copied
-        const embedCode = `<iframe src="https://yeetov.github.io/owbattlecard?player=${data.name}" width="600" height="150" frameborder="0" style="border:0;"></iframe>`;
-        document.getElementById('embed-code').value = embedCode;
-    }
-
-    // Call the function to populate the card
-    fetchPlayerData();
-
-    // Add event listener to the copy button
-    document.getElementById('copy-btn').addEventListener('click', function() {
-        const embedCodeTextArea = document.getElementById('embed-code');
-        embedCodeTextArea.select();
-        document.execCommand('copy'); // Copy to clipboard
-        alert('Embed code copied to clipboard!');
-    });
-
-    // Add event listener to the download button
-    document.getElementById('download-btn').addEventListener('click', function() {
-        const images = document.querySelectorAll('img');
-        let loadedImagesCount = 0;
-
-        images.forEach((img) => {
-            if (img.complete) {
-                loadedImagesCount++;
-            } else {
-                img.onload = function() {
-                    loadedImagesCount++;
-                    if (loadedImagesCount === images.length) {
-                        captureScreenshot();
-                    }
-                };
-            }
-        });
-
-        if (loadedImagesCount === images.length) {
-            captureScreenshot();
-        }
-
-        // Function to capture the screenshot
-        function captureScreenshot() {
-            console.log("Capturing Screenshot..."); // Log for debugging
-            html2canvas(document.querySelector('.results-container'), {
-                backgroundColor: null,
-                logging: true,
-                useCORS: true
-            }).then(function(canvas) {
-                const link = document.createElement('a');
-                link.download = 'overwatch-player-card.png';
-                link.href = canvas.toDataURL();
-                link.click();
-                console.log("Download triggered!");
-            }).catch(function(error) {
-                console.error("Error capturing screenshot:", error);
-            });
-        }
-    });
-</script>
-
-<!-- Service Worker Script (Embedded) -->
-<script>
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.ready.then(function(registration) {
-            registration.active.postMessage({
-                type: 'CACHE_IMAGES'
-            });
-        });
-    }
-</script>
 
 </body>
 </html>
