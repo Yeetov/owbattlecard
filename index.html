@@ -414,6 +414,10 @@
         
         let currentTagForEmbed = "Aarontendo#2585"; // Default
 
+        // --- Caching Configuration ---
+        const CACHE_KEY_PREFIX = "ow_card_data_";
+        const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
+
         // 1. Auto-detect Region based on Timezone
         try {
             const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -477,6 +481,35 @@
             });
         });
 
+        // --- Cache Helpers ---
+        function getFromCache(tag) {
+            try {
+                const item = localStorage.getItem(CACHE_KEY_PREFIX + tag);
+                if (!item) return null;
+                const record = JSON.parse(item);
+                if (Date.now() - record.timestamp > CACHE_DURATION) {
+                    localStorage.removeItem(CACHE_KEY_PREFIX + tag); // Expired
+                    return null;
+                }
+                return record.data;
+            } catch (e) {
+                console.warn("Cache read error", e);
+                return null;
+            }
+        }
+
+        function saveToCache(tag, data) {
+            try {
+                const record = {
+                    timestamp: Date.now(),
+                    data: data
+                };
+                localStorage.setItem(CACHE_KEY_PREFIX + tag, JSON.stringify(record));
+            } catch (e) {
+                console.warn("Cache write error", e);
+            }
+        }
+
         // 4. Main Data Fetcher
         async function fetchData() {
             const tagInput = document.getElementById('battletag').value.trim();
@@ -488,11 +521,23 @@
                 return;
             }
 
+            // API needs '-' instead of '#'
+            const formattedTag = tagInput.replace('#', '-');
+
+            // --- INSTANT CACHE CHECK ---
+            const cachedData = getFromCache(formattedTag);
+            if (cachedData) {
+                // Instant load
+                setStatus("", "success", false); // Clear loading
+                updateUI(cachedData, tagInput);
+                currentTagForEmbed = tagInput;
+                return; 
+            }
+
             setStatus("Fetching data...", "info", true);
             currentTagForEmbed = tagInput; // Save for embed code generation
 
-            // API needs '-' instead of '#'
-            const formattedTag = tagInput.replace('#', '-');
+            
             const url = `https://ow-api.com/v1/stats/${platform}/${region}/${formattedTag}/profile`;
 
             // Timeout Logic (Fix for hanging requests)
@@ -517,6 +562,8 @@
                     setStatus("", "success", false);
                 }
 
+                // Save to Cache & Update UI
+                saveToCache(formattedTag, data);
                 updateUI(data, tagInput);
 
             } catch (err) {
