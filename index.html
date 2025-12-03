@@ -3,227 +3,449 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Overwatch 2 Battle Card</title>
-    <link rel="stylesheet" href="https://static.playoverwatch.com/career-2ae69e770c.css">
+    <title>Overwatch 2 Battle Card Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Teko:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
+        :root {
+            --ow-orange: #f99e1a;
+            --ow-blue: #009cff;
+            --bg-dark: #191f2b;
+            --card-bg: #28354f;
+            --text-light: #ffffff;
+        }
+
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
-            background-color: #f3f3f3;
+            background-color: #0d121c;
+            color: var(--text-light);
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             flex-direction: column;
+            padding: 20px;
         }
-        .results-container {
+
+        h1 {
+            font-family: 'Teko', sans-serif;
+            text-transform: uppercase;
+            font-size: 3rem;
+            color: var(--ow-orange);
+            margin-bottom: 5px;
+            font-style: italic;
+            letter-spacing: 2px;
+        }
+
+        .subtitle {
+            color: #8da1b9;
+            margin-bottom: 30px;
+        }
+
+        /* --- Search Section --- */
+        .search-container {
+            background-color: var(--bg-dark);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
             display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
             justify-content: center;
-            align-items: center;
+            border: 1px solid #333;
+            max-width: 800px;
         }
+
+        input, select {
+            padding: 12px 15px;
+            border-radius: 4px;
+            border: 1px solid #444;
+            background-color: #090c13;
+            color: white;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--ow-orange);
+        }
+
+        button {
+            padding: 12px 25px;
+            border-radius: 4px;
+            border: none;
+            font-weight: bold;
+            text-transform: uppercase;
+            cursor: pointer;
+            font-family: 'Teko', sans-serif;
+            font-size: 1.2rem;
+            letter-spacing: 1px;
+            transition: transform 0.1s, background-color 0.2s;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .btn-primary {
+            background-color: var(--ow-orange);
+            color: #fff;
+        }
+        
+        .btn-primary:hover {
+            background-color: #e58e12;
+        }
+
+        .btn-action {
+            background-color: var(--ow-blue);
+            color: white;
+            margin-top: 15px;
+            font-size: 1rem;
+            padding: 10px 20px;
+        }
+
+        .btn-secondary {
+            background-color: #4a5a75;
+            color: white;
+            margin-top: 15px;
+        }
+
+        /* --- Status Messages --- */
+        #status-msg {
+            height: 20px;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        .error { color: #ff4d4d; }
+        .success { color: #4dff88; }
+        .info { color: #4db8ff; }
+
+        /* --- Card Styles --- */
+        .card-wrapper {
+            margin-bottom: 20px;
+            /* Wrapper ensures padding doesn't mess up html2canvas screenshot boundaries */
+            padding: 10px; 
+            border: 1px dashed #333;
+            border-radius: 12px;
+        }
+
         .player-card {
             position: relative;
             display: flex;
             align-items: center;
-            background: var(--bg-namePlate) no-repeat center / cover;
+            background-color: #333; /* Fallback */
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: cover;
             width: 600px;
             height: 150px;
             border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
             padding-left: 170px;
             overflow: hidden;
+            box-sizing: border-box; /* Important for width calculation */
+            border: 2px solid rgba(255,255,255,0.1);
         }
+
         .player-overlay {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(to right, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0) 100%);
+            /* Gradient to make text readable regardless of background image */
+            background: linear-gradient(90deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.8) 35%, rgba(255,255,255,0) 100%);
             z-index: 1;
         }
+
         .player-icon {
             position: absolute;
             left: 20px;
             top: 50%;
             transform: translateY(-50%);
-            width: 130px;
-            height: 130px;
-            border: 3px solid #fff;
+            width: 110px;
+            height: 110px;
+            border: 4px solid white;
             background-color: #000;
             z-index: 2;
+            border-radius: 8px; /* Slightly rounded corners look more modern */
+            object-fit: cover;
         }
+
         .player-text {
             position: relative;
             z-index: 3;
-            color: #000;
-            text-shadow: 1px 1px 3px rgba(255, 255, 255, 0.8);
+            color: #2b2b2b;
             display: flex;
             flex-direction: column;
             justify-content: center;
             height: 100%;
+            font-family: 'Teko', sans-serif;
+            text-transform: uppercase;
         }
+
         .player-name {
-            font-size: 24px;
-            font-weight: bold;
+            font-size: 42px;
+            font-weight: 700;
             margin: 0;
+            line-height: 0.9;
+            letter-spacing: 1px;
+            color: #333;
         }
+
         .player-title {
-            font-size: 16px;
+            font-size: 20px;
             color: #555;
             margin: 0;
+            font-weight: 600;
+            letter-spacing: 0.5px;
         }
-        #embed-code-section {
-            margin-top: 30px;
-            text-align: center;
+
+        /* --- Embed Section --- */
+        #embed-area {
+            display: none;
+            width: 100%;
+            max-width: 600px;
+            margin-top: 20px;
+            background: #191f2b;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: left;
         }
-        #embed-code {
-            width: 90%;
-            height: 100px;
-            margin-top: 10px;
-            padding: 10px;
+
+        textarea {
+            width: 100%;
+            height: 60px;
+            background: #090c13;
+            color: #00ffaa;
+            border: 1px solid #333;
+            border-radius: 4px;
             font-family: monospace;
-            background-color: #f3f3f3;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            white-space: pre-wrap;
-            word-wrap: break-word;
+            padding: 10px;
+            box-sizing: border-box;
+            resize: none;
         }
-        #copy-btn {
-            margin-top: 10px;
-            padding: 10px 20px;
-            background-color: #008cba;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
+        
+        .actions {
+            display: flex;
+            gap: 10px;
         }
-        #download-btn {
-            margin-top: 10px;
-            padding: 10px 20px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
+
+        /* Responsive */
+        @media (max-width: 650px) {
+            .card-wrapper {
+                transform: scale(0.6);
+                margin: -30px 0;
+            }
+            h1 { font-size: 2rem; }
         }
     </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js"></script>
 </head>
 <body>
-<div class="results-container">
-    <a id="battleCard" class="player-card player-card--withTitle player-card--withNamePlate">
-        <div class="player-overlay"></div>
-        <img id="playerIcon" class="player-icon" src="" alt="Player Icon">
-        <div class="player-text">
-            <div id="playerName" class="player-name">Username</div>
-            <div id="playerTitle" class="player-title">Player Title</div>
+
+    <h1>Overwatch Battle Card</h1>
+    <div class="subtitle">Generate a career profile card for your stream or socials</div>
+
+    <!-- Input Section -->
+    <div class="search-container">
+        <input type="text" id="battletag" placeholder="Name#1234" value="Aarontendo#2585">
+        
+        <select id="platform">
+            <option value="pc">PC</option>
+            <option value="console">Console</option>
+        </select>
+        
+        <select id="region">
+            <option value="us">US</option>
+            <option value="eu" selected>EU</option>
+            <option value="asia">Asia</option>
+        </select>
+
+        <button class="btn-primary" id="generate-btn">Get Data</button>
+    </div>
+
+    <div id="status-msg"></div>
+
+    <!-- The Card -->
+    <div class="card-wrapper">
+        <div id="battleCard" class="player-card">
+            <div class="player-overlay"></div>
+            <!-- crossorigin="anonymous" is crucial for html2canvas to allow downloading images from external CDNs -->
+            <!-- fallback onerror logic to prevent broken image icons -->
+            <img id="playerIcon" class="player-icon" src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Overwatch_circle_logo.svg/120px-Overwatch_circle_logo.svg.png" alt="Icon" crossorigin="anonymous" onerror="this.onerror=null;this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Overwatch_circle_logo.svg/120px-Overwatch_circle_logo.svg.png';">
+            <div class="player-text">
+                <div id="playerName" class="player-name">PLAYER</div>
+                <div id="playerTitle" class="player-title">LEVEL 0</div>
+            </div>
         </div>
-    </a>
-</div>
+    </div>
 
-<div id="embed-code-section">
-    <label for="embed-code">Copy this embed code to share the player card:</label>
-    <textarea id="embed-code" readonly></textarea>
-    <button id="copy-btn">Copy Embed Code</button>
-</div>
+    <!-- Actions -->
+    <div class="actions">
+        <button id="download-btn" class="btn-action">Download Image</button>
+        <button id="show-embed-btn" class="btn-secondary">Get Embed Code</button>
+    </div>
 
-<button id="download-btn">Download as Image</button>
+    <!-- Embed Code Display -->
+    <div id="embed-area">
+        <p style="margin-top:0; color:#ccc; font-size:0.9rem;">Copy this code to your website:</p>
+        <textarea id="embed-code" readonly></textarea>
+        <button id="copy-btn" class="btn-secondary" style="font-size: 0.9rem; padding: 5px 15px;">Copy</button>
+    </div>
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {
-        // Fetch player data and populate the card
-        async function fetchPlayerData() {
-            // Example: Static data to simulate API response for Overwatch 2
-            const data = {
-                "competitiveStats": {"season": 10},
-                "endorsement": 3,
-                "endorsementIcon": "https://static.playoverwatch.com/img/pages/career/icons/endorsement/3-8ccb5f0aef.svg#icon",
-                "gamesLost": 45,
-                "gamesPlayed": 78,
-                "gamesWon": 33,
-                "icon": "https://d15f34w2p8l1cc.cloudfront.net/overwatch/33c15d3ce7b4d3b9bd03234faa7c7806d7e28bfc9a9f3fe7014b5986c9453d5c.png",
-                "name": "Aarontendo",
-                "quickPlayStats": {"games": {"played": 78, "won": 33}},
-                "private": false,
-                "ratings": null,
-                "nameplate": "https://d15f34w2p8l1cc.cloudfront.net/overwatch/3fa9190e08a7903c0f4f303e0100fe4dbcfe61f3a42e426000adf871d61e8e94.png",
-                "title": "Cupid's Arrow"
-            };
+        const btnGenerate = document.getElementById('generate-btn');
+        const btnDownload = document.getElementById('download-btn');
+        const btnEmbed = document.getElementById('show-embed-btn');
+        const btnCopy = document.getElementById('copy-btn');
+        const statusDiv = document.getElementById('status-msg');
 
-            // Map data to card
-            const battleCard = document.getElementById('battleCard');
-            if (battleCard) {
-                battleCard.style.setProperty('--bg-namePlate', `url(${data.nameplate})`);
+        // Default Load
+        fetchData();
+
+        btnGenerate.addEventListener('click', fetchData);
+
+        btnEmbed.addEventListener('click', () => {
+            document.getElementById('embed-area').style.display = 'block';
+        });
+
+        btnCopy.addEventListener('click', () => {
+            const copyText = document.getElementById("embed-code");
+            copyText.select();
+            document.execCommand('copy'); // Legacy support
+            btnCopy.textContent = "Copied!";
+            setTimeout(() => btnCopy.textContent = "Copy", 2000);
+        });
+
+        btnDownload.addEventListener('click', downloadCard);
+
+        async function fetchData() {
+            const tagInput = document.getElementById('battletag').value.trim();
+            const platform = document.getElementById('platform').value;
+            const region = document.getElementById('region').value;
+
+            if (!tagInput.includes('#')) {
+                setStatus("Please enter a valid BattleTag (Name#1234)", "error");
+                return;
             }
 
-            const playerIcon = document.getElementById('playerIcon');
-            if (playerIcon) {
-                playerIcon.src = data.icon;
-            }
+            setStatus("Fetching player data...", "info");
 
-            const playerName = document.getElementById('playerName');
-            if (playerName) {
-                playerName.innerText = data.name.toUpperCase();
-            }
+            // API needs '-' instead of '#'
+            const formattedTag = tagInput.replace('#', '-');
+            
+            // Updated URL structure based on documentation: /stats/:platform/:region/:battletag/profile
+            const url = `https://ow-api.com/v1/stats/${platform}/${region}/${formattedTag}/profile`;
 
-            const playerTitle = document.getElementById('playerTitle');
-            if (playerTitle) {
-                playerTitle.innerText = data.title;
-            }
+            try {
+                const response = await fetch(url);
+                if(!response.ok) throw new Error("API Error");
+                const data = await response.json();
 
-            // Embed code to be copied
-            const embedCode = `<iframe src="YOUR_WEBSITE_URL?player=${data.name}" width="600" height="150" frameborder="0" style="border:0;"></iframe>`;
-            const embedCodeTextarea = document.getElementById('embed-code');
-            if (embedCodeTextarea) {
-                embedCodeTextarea.value = embedCode;
+                if (data.error) {
+                    setStatus("Player not found. Is the profile Private?", "error");
+                    return;
+                }
+
+                if (data.private) {
+                    setStatus("Profile is Private. Some data may be hidden.", "info");
+                } else {
+                    setStatus("Data loaded successfully!", "success");
+                }
+
+                updateUI(data, tagInput);
+
+            } catch (err) {
+                console.error(err);
+                setStatus("Failed to fetch data. Try again later or check Region.", "error");
             }
         }
 
-        fetchPlayerData();
+        function updateUI(data, originalTag) {
+            const card = document.getElementById('battleCard');
+            const icon = document.getElementById('playerIcon');
+            const nameEl = document.getElementById('playerName');
+            const titleEl = document.getElementById('playerTitle');
+            const embedBox = document.getElementById('embed-code');
 
-        // Add event listener to the copy button
-        document.getElementById('copy-btn').addEventListener('click', function() {
-            const embedCodeTextArea = document.getElementById('embed-code');
-            embedCodeTextArea.select();
-            document.execCommand('copy'); // Copy to clipboard
-            alert('Embed code copied to clipboard!');
-        });
+            // 1. Name
+            // If API returns name, use it. Otherwise use the input tag.
+            const displayName = data.name || originalTag.split('#')[0];
+            nameEl.textContent = displayName;
 
-        // Add event listener to the download button
-        document.getElementById('download-btn').addEventListener('click', function() {
-            const images = document.querySelectorAll('img');
-            let loadedImagesCount = 0;
+            // 2. Subtitle / Title logic based on API Docs provided
+            let subText = "Player";
+            
+            if (data.rating) {
+                // Use rating if available (from documentation)
+                subText = `Rating: ${data.rating}`;
+            } else if (data.ratings && data.ratings.length > 0) {
+                // Fallback for array structure (OW2 specific)
+                subText = `${data.ratings[0].role.toUpperCase()}: ${data.ratings[0].group}`;
+            } else if (data.endorsement) {
+                subText = `Endorsement Level ${data.endorsement}`;
+            } else if (data.gamesWon) {
+                // Use gamesWon (from documentation)
+                subText = `${data.gamesWon} Games Won`;
+            }
+            
+            titleEl.textContent = subText;
 
-            images.forEach((img) => {
-                if (img.complete) {
-                    loadedImagesCount++;
-                } else {
-                    img.onload = function() {
-                        loadedImagesCount++;
-                        if (loadedImagesCount === images.length) {
-                            captureScreenshot();
-                        }
-                    };
-                }
-            });
-
-            if (loadedImagesCount === images.length) {
-                captureScreenshot();
+            // 3. Icon
+            if (data.icon) {
+                icon.src = data.icon;
             }
 
-            // Function to capture the screenshot
-            function captureScreenshot() {
-                console.log("Capturing Screenshot..."); // Log for debugging
-                html2canvas(document.querySelector("#battleCard")).then(function(canvas) {
-                    const dataURL = canvas.toDataURL();
-                    const a = document.createElement("a");
-                    a.href = dataURL;
-                    a.download = "player_card.png";
-                    a.click();
+            // 4. Background (Nameplate)
+            // Use levelIcon or nameplate if available. Fallback to default.
+            const bgUrl = data.nameplate || data.levelIcon || "https://d15f34w2p8l1cc.cloudfront.net/overwatch/3fa9190e08a7903c0f4f303e0100fe4dbcfe61f3a42e426000adf871d61e8e94.png";
+            card.style.backgroundImage = `url('${bgUrl}')`;
+
+            // 5. Update Embed Code
+            const embedStr = `<iframe src="${window.location.href.split('?')[0]}?user=${originalTag}" width="600" height="150" style="border:none;"></iframe>`;
+            embedBox.value = embedStr;
+        }
+
+        function setStatus(msg, type) {
+            statusDiv.textContent = msg;
+            statusDiv.className = type;
+        }
+
+        function downloadCard() {
+            const cardElement = document.getElementById('battleCard');
+            const originalBtnText = btnDownload.textContent;
+            
+            btnDownload.textContent = "Processing...";
+            btnDownload.disabled = true;
+
+            setTimeout(() => {
+                html2canvas(cardElement, {
+                    useCORS: true, 
+                    allowTaint: true,
+                    backgroundColor: null,
+                    scale: 2, 
+                }).then(canvas => {
+                    const link = document.createElement('a');
+                    link.download = `OverwatchCard-${document.getElementById('playerName').textContent}.png`;
+                    link.href = canvas.toDataURL("image/png");
+                    link.click();
+                    
+                    btnDownload.textContent = "Downloaded!";
+                    setTimeout(() => {
+                        btnDownload.textContent = originalBtnText;
+                        btnDownload.disabled = false;
+                    }, 2000);
+                }).catch(err => {
+                    console.error("Canvas Error:", err);
+                    setStatus("Error saving image. Browser security blocked the external images.", "error");
+                    btnDownload.textContent = originalBtnText;
+                    btnDownload.disabled = false;
                 });
-            }
-        });
+            }, 500);
+        }
     });
 </script>
 </body>
