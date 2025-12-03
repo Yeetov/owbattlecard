@@ -391,7 +391,8 @@
     <div id="embed-area">
         <div class="embed-tabs">
             <button class="tab-btn active" data-type="html">HTML (Iframe)</button>
-            <button class="tab-btn" data-type="markdown">Markdown (GitHub)</button>
+            <button class="tab-btn" data-type="markdown">Markdown (Link)</button>
+            <button class="tab-btn" data-type="auto">Automation</button>
         </div>
         <p id="embed-desc" style="margin-top:0; color:#ccc; font-size:0.8rem;">Code for your website:</p>
         <textarea id="embed-code" readonly></textarea>
@@ -411,6 +412,7 @@
         const battletagInput = document.getElementById('battletag');
         const embedTabs = document.querySelectorAll('.tab-btn');
         const embedCodeArea = document.getElementById('embed-code');
+        const embedDesc = document.getElementById('embed-desc');
         
         let currentTagForEmbed = "Aarontendo#2585"; // Default
 
@@ -624,12 +626,43 @@
             const directLink = `${baseUrl}?user=${encodedTag}`;
 
             if (type === 'html') {
-                document.getElementById('embed-desc').textContent = "Copy this code to your website (Iframe):";
+                embedDesc.textContent = "Copy this code to your website (Iframe):";
                 embedCodeArea.value = `<iframe src="${directLink}" width="600" height="150" style="border:none; overflow:hidden;" scrolling="no"></iframe>`;
-            } else {
-                document.getElementById('embed-desc').textContent = "Use this Badge Link for GitHub READMEs (Interactive widgets are not supported on GitHub):";
-                // Generates a Shields.io badge that LINKS to the card
+            } else if (type === 'markdown') {
+                embedDesc.textContent = "Use this Badge Link for GitHub READMEs:";
                 embedCodeArea.value = `[![Overwatch Battle Card](https://img.shields.io/badge/Overwatch-View_Battle_Card-orange)](${directLink})`;
+            } else if (type === 'auto') {
+                embedDesc.textContent = "GitHub READMEs cannot run JavaScript. To display a dynamic image, you must use a GitHub Action to automatically screenshot this page daily and save the image to your repository. Create a '.github/workflows/update-card.yml' file with this content:";
+                // Generate the workflow YAML specifically for this URL
+                embedCodeArea.value = `name: Update Battle Card
+on:
+  schedule:
+    - cron: '0 0 * * *' # Runs daily at midnight
+  workflow_dispatch:
+
+jobs:
+  update-card:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v3
+      - name: Take Screenshot
+        uses: simonw/shot-scraper-action@v3.1
+        with:
+          url: '${directLink}'
+          output: 'profile-card.png'
+          width: 600
+          height: 150
+          # Wait 3s to ensure fonts/images load
+          wait: 3000 
+      - name: Commit and Push
+        run: |-
+          git config user.name "Automated"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git commit -m "Update Battle Card" || exit 0
+          git push`;
             }
         }
 
