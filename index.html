@@ -259,7 +259,7 @@
         
         <select id="region">
             <option value="us">US</option>
-            <option value="eu" selected>EU</option>
+            <option value="eu">EU</option>
             <option value="asia">Asia</option>
         </select>
 
@@ -302,6 +302,23 @@
         const btnEmbed = document.getElementById('show-embed-btn');
         const btnCopy = document.getElementById('copy-btn');
         const statusDiv = document.getElementById('status-msg');
+        const regionSelect = document.getElementById('region');
+
+        // Auto-detect Region based on Timezone
+        try {
+            const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            if (timeZone) {
+                if (timeZone.startsWith('America/')) {
+                    regionSelect.value = 'us';
+                } else if (timeZone.startsWith('Asia/') || timeZone.startsWith('Australia/')) {
+                    regionSelect.value = 'asia';
+                } else if (timeZone.startsWith('Europe/') || timeZone.startsWith('Africa/')) {
+                    regionSelect.value = 'eu';
+                }
+            }
+        } catch (e) {
+            console.log("Could not detect timezone, defaulting to HTML selection");
+        }
 
         // Default Load
         fetchData();
@@ -364,6 +381,15 @@
             }
         }
 
+        // Helper to fix CORS issues by routing through a proxy
+        function getCorsProxyUrl(url) {
+            if (!url) return '';
+            // We use images.weserv.nl which is a reliable public image proxy
+            // It expects the protocol to be stripped or just the URL passed
+            const cleanUrl = url.replace(/^https?:\/\//, '');
+            return `https://images.weserv.nl/?url=${cleanUrl}&output=png`;
+        }
+
         function updateUI(data, originalTag) {
             const card = document.getElementById('battleCard');
             const icon = document.getElementById('playerIcon');
@@ -372,7 +398,6 @@
             const embedBox = document.getElementById('embed-code');
 
             // 1. Name
-            // If API returns name, use it. Otherwise use the input tag.
             const displayName = data.name || originalTag.split('#')[0];
             nameEl.textContent = displayName;
 
@@ -380,29 +405,25 @@
             let subText = "Player";
             
             if (data.rating) {
-                // Use rating if available (from documentation)
                 subText = `Rating: ${data.rating}`;
             } else if (data.ratings && data.ratings.length > 0) {
-                // Fallback for array structure (OW2 specific)
                 subText = `${data.ratings[0].role.toUpperCase()}: ${data.ratings[0].group}`;
             } else if (data.endorsement) {
                 subText = `Endorsement Level ${data.endorsement}`;
             } else if (data.gamesWon) {
-                // Use gamesWon (from documentation)
                 subText = `${data.gamesWon} Games Won`;
             }
             
             titleEl.textContent = subText;
 
-            // 3. Icon
+            // 3. Icon (Using Proxy)
             if (data.icon) {
-                icon.src = data.icon;
+                icon.src = getCorsProxyUrl(data.icon);
             }
 
-            // 4. Background (Nameplate)
-            // Use levelIcon or nameplate if available. Fallback to default.
+            // 4. Background (Nameplate) (Using Proxy)
             const bgUrl = data.nameplate || data.levelIcon || "https://d15f34w2p8l1cc.cloudfront.net/overwatch/3fa9190e08a7903c0f4f303e0100fe4dbcfe61f3a42e426000adf871d61e8e94.png";
-            card.style.backgroundImage = `url('${bgUrl}')`;
+            card.style.backgroundImage = `url('${getCorsProxyUrl(bgUrl)}')`;
 
             // 5. Update Embed Code
             const embedStr = `<iframe src="${window.location.href.split('?')[0]}?user=${originalTag}" width="600" height="150" style="border:none;"></iframe>`;
