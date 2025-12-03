@@ -284,7 +284,8 @@
 
     <!-- Input Section -->
     <div class="search-container">
-        <input type="text" id="battletag" placeholder="Name#1234" value="Aarontendo#2585">
+        <!-- Removed default value to speed up initial render and indicate readiness state -->
+        <input type="text" id="battletag" placeholder="Name#1234">
         
         <select id="platform">
             <option value="pc">PC</option>
@@ -360,7 +361,6 @@
         let userParam = urlParams.get('user');
         
         // Fix for unencoded # in URL (browsers interpret # as anchor)
-        // Example: ?user=Name#1234 -> param is 'Name', hash is '#1234'
         if (userParam && window.location.hash) {
             if (!userParam.includes('#')) {
                 userParam += window.location.hash;
@@ -369,12 +369,13 @@
 
         if (userParam) {
             battletagInput.value = userParam;
-            // Activate Embed Mode: Hide inputs, adjust layout
+            // Activate Embed Mode
             document.body.classList.add('embed-mode');
+            // Only auto-fetch if we have a user param (Embed mode)
+            fetchData();
         }
 
-        // Default Load (either from URL param or default value)
-        fetchData();
+        // REMOVED default fetchData() call here to prevent initial load delay.
 
         btnGenerate.addEventListener('click', fetchData);
 
@@ -407,7 +408,7 @@
             // API needs '-' instead of '#'
             const formattedTag = tagInput.replace('#', '-');
             
-            // Updated URL structure based on documentation: /stats/:platform/:region/:battletag/profile
+            // Updated URL structure
             const url = `https://ow-api.com/v1/stats/${platform}/${region}/${formattedTag}/profile`;
 
             try {
@@ -438,9 +439,9 @@
         function getCorsProxyUrl(url) {
             if (!url) return '';
             // We use images.weserv.nl which is a reliable public image proxy
-            // It expects the protocol to be stripped or just the URL passed
+            // Added &w=200 to resize images, improving load performance
             const cleanUrl = url.replace(/^https?:\/\//, '');
-            return `https://images.weserv.nl/?url=${cleanUrl}&output=png`;
+            return `https://images.weserv.nl/?url=${cleanUrl}&output=png&w=200`;
         }
 
         function updateUI(data, originalTag) {
@@ -479,7 +480,6 @@
             card.style.backgroundImage = `url('${getCorsProxyUrl(bgUrl)}')`;
 
             // 5. Update Embed Code
-            // We MUST encode the originalTag to handle the # character safely in URLs
             const encodedTag = encodeURIComponent(originalTag);
             const embedStr = `<iframe src="${window.location.href.split('?')[0]}?user=${encodedTag}" width="600" height="150" style="border:none;"></iframe>`;
             embedBox.value = embedStr;
