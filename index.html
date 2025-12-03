@@ -233,6 +233,40 @@
             gap: 10px;
         }
 
+        /* --- Embed Mode Support (Hides UI when embedded) --- */
+        body.embed-mode {
+            padding: 0;
+            background-color: transparent;
+            min-height: 0;
+            height: 100%;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        body.embed-mode h1,
+        body.embed-mode .subtitle,
+        body.embed-mode .search-container,
+        body.embed-mode .actions,
+        body.embed-mode #embed-area,
+        body.embed-mode #status-msg {
+            display: none !important;
+        }
+
+        body.embed-mode .card-wrapper {
+            margin: 0;
+            padding: 0;
+            border: none;
+            box-shadow: none;
+            /* Reset transform for embed consistency */
+            transform: none; 
+        }
+
+        body.embed-mode .player-card {
+            box-shadow: none;
+            border: none;
+        }
+
         /* Responsive */
         @media (max-width: 650px) {
             .card-wrapper {
@@ -323,12 +357,20 @@
 
         // Check for URL parameters (Embed Mode)
         const urlParams = new URLSearchParams(window.location.search);
-        const userParam = urlParams.get('user');
+        let userParam = urlParams.get('user');
         
+        // Fix for unencoded # in URL (browsers interpret # as anchor)
+        // Example: ?user=Name#1234 -> param is 'Name', hash is '#1234'
+        if (userParam && window.location.hash) {
+            if (!userParam.includes('#')) {
+                userParam += window.location.hash;
+            }
+        }
+
         if (userParam) {
             battletagInput.value = userParam;
-            // Note: We don't hide the search box because the user might want to search others,
-            // but for a pure embed, you could hide .search-container and .actions via CSS if desired.
+            // Activate Embed Mode: Hide inputs, adjust layout
+            document.body.classList.add('embed-mode');
         }
 
         // Default Load (either from URL param or default value)
