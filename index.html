@@ -647,15 +647,17 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v3
-      - name: Take Screenshot
-        uses: simonw/shot-scraper-action@v3.1
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          url: '${directLink}'
-          output: 'profile-card.png'
-          width: 600
-          height: 150
-          # Wait 3s to ensure fonts/images load
-          wait: 3000 
+          python-version: '3.10'
+      - name: Install shot-scraper
+        run: |
+          pip install shot-scraper
+          shot-scraper install
+      - name: Take Screenshot
+        run: |
+          shot-scraper "${directLink}" -o profile-card.png --width 600 --height 150 --wait 3000
       - name: Commit and Push
         run: |-
           git config user.name "Automated"
