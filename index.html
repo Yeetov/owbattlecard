@@ -15,9 +15,15 @@
             --text-light: #ffffff;
         }
 
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            /* Fix for embed scrolling */
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
             background-color: #0d121c;
             color: var(--text-light);
             display: flex;
@@ -26,6 +32,7 @@
             min-height: 100vh;
             flex-direction: column;
             padding: 20px;
+            box-sizing: border-box;
         }
 
         h1 {
@@ -41,6 +48,7 @@
         .subtitle {
             color: #8da1b9;
             margin-bottom: 30px;
+            text-align: center;
         }
 
         /* --- Search Section --- */
@@ -56,6 +64,8 @@
             justify-content: center;
             border: 1px solid #333;
             max-width: 800px;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         input, select {
@@ -112,12 +122,35 @@
             margin-top: 15px;
         }
 
-        /* --- Status Messages --- */
-        #status-msg {
-            height: 20px;
+        /* --- Status Messages & Loader --- */
+        #status-container {
+            height: 30px;
             margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        #status-msg {
             font-weight: bold;
         }
+
+        .loader {
+            display: none; /* Hidden by default */
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--ow-orange);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
         .error { color: #ff4d4d; }
         .success { color: #4dff88; }
         .info { color: #4db8ff; }
@@ -129,6 +162,7 @@
             padding: 10px; 
             border: 1px dashed #333;
             border-radius: 12px;
+            transition: all 0.3s;
         }
 
         .player-card {
@@ -213,11 +247,34 @@
             padding: 15px;
             border-radius: 8px;
             text-align: left;
+            border: 1px solid #333;
+        }
+
+        .embed-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: #888;
+            font-size: 0.9rem;
+            cursor: pointer;
+            padding: 5px 0;
+        }
+
+        .tab-btn.active {
+            color: var(--ow-orange);
+            border-bottom: 2px solid var(--ow-orange);
         }
 
         textarea {
             width: 100%;
-            height: 60px;
+            height: 70px;
             background: #090c13;
             color: #00ffaa;
             border: 1px solid #333;
@@ -226,6 +283,7 @@
             padding: 10px;
             box-sizing: border-box;
             resize: none;
+            font-size: 0.85rem;
         }
         
         .actions {
@@ -237,11 +295,11 @@
         body.embed-mode {
             padding: 0;
             background-color: transparent;
-            min-height: 0;
-            height: 100%;
+            height: 100vh;
+            width: 100vw;
             justify-content: center;
             align-items: center;
-            overflow: hidden;
+            overflow: hidden; /* Critical for iframes */
         }
 
         body.embed-mode h1,
@@ -249,7 +307,7 @@
         body.embed-mode .search-container,
         body.embed-mode .actions,
         body.embed-mode #embed-area,
-        body.embed-mode #status-msg {
+        body.embed-mode #status-container {
             display: none !important;
         }
 
@@ -258,8 +316,7 @@
             padding: 0;
             border: none;
             box-shadow: none;
-            /* Reset transform for embed consistency */
-            transform: none; 
+            transform: none !important; /* Ensure no scaling issues in iframe */
         }
 
         body.embed-mode .player-card {
@@ -274,6 +331,11 @@
                 margin: -30px 0;
             }
             h1 { font-size: 2rem; }
+            /* Don't scale in embed mode if iframe is small, let the iframe size handle it */
+            body.embed-mode .card-wrapper {
+                transform: scale(0.8); 
+                margin: 0;
+            }
         }
     </style>
 </head>
@@ -284,7 +346,6 @@
 
     <!-- Input Section -->
     <div class="search-container">
-        <!-- Removed default value to speed up initial render and indicate readiness state -->
         <input type="text" id="battletag" placeholder="Name#1234">
         
         <select id="platform">
@@ -301,7 +362,10 @@
         <button class="btn-primary" id="generate-btn">Get Data</button>
     </div>
 
-    <div id="status-msg"></div>
+    <div id="status-container">
+        <div class="loader" id="loader"></div>
+        <div id="status-msg"></div>
+    </div>
 
     <!-- The Card -->
     <div class="card-wrapper">
@@ -320,27 +384,37 @@
     <!-- Actions -->
     <div class="actions">
         <button id="download-btn" class="btn-action">Download Image</button>
-        <button id="show-embed-btn" class="btn-secondary">Get Embed Code</button>
+        <button id="show-embed-btn" class="btn-secondary">Embed / Share</button>
     </div>
 
     <!-- Embed Code Display -->
     <div id="embed-area">
-        <p style="margin-top:0; color:#ccc; font-size:0.9rem;">Copy this code to your website:</p>
+        <div class="embed-tabs">
+            <button class="tab-btn active" data-type="html">HTML (Iframe)</button>
+            <button class="tab-btn" data-type="markdown">Markdown (GitHub)</button>
+        </div>
+        <p id="embed-desc" style="margin-top:0; color:#ccc; font-size:0.8rem;">Code for your website:</p>
         <textarea id="embed-code" readonly></textarea>
-        <button id="copy-btn" class="btn-secondary" style="font-size: 0.9rem; padding: 5px 15px;">Copy</button>
+        <button id="copy-btn" class="btn-secondary" style="font-size: 0.9rem; padding: 5px 15px;">Copy Code</button>
     </div>
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {
+        // Elements
         const btnGenerate = document.getElementById('generate-btn');
         const btnDownload = document.getElementById('download-btn');
         const btnEmbed = document.getElementById('show-embed-btn');
         const btnCopy = document.getElementById('copy-btn');
         const statusDiv = document.getElementById('status-msg');
+        const loader = document.getElementById('loader');
         const regionSelect = document.getElementById('region');
         const battletagInput = document.getElementById('battletag');
+        const embedTabs = document.querySelectorAll('.tab-btn');
+        const embedCodeArea = document.getElementById('embed-code');
+        
+        let currentTagForEmbed = "Aarontendo#2585"; // Default
 
-        // Auto-detect Region based on Timezone
+        // 1. Auto-detect Region based on Timezone
         try {
             const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
             if (timeZone) {
@@ -353,10 +427,10 @@
                 }
             }
         } catch (e) {
-            console.log("Could not detect timezone, defaulting to HTML selection");
+            console.log("Region detect failed");
         }
 
-        // Check for URL parameters (Embed Mode)
+        // 2. Check for URL parameters (Embed Mode Logic)
         const urlParams = new URLSearchParams(window.location.search);
         let userParam = urlParams.get('user');
         
@@ -368,80 +442,100 @@
         }
 
         if (userParam) {
+            // Embed Mode Active
             battletagInput.value = userParam;
-            // Activate Embed Mode
             document.body.classList.add('embed-mode');
-            // Only auto-fetch if we have a user param (Embed mode)
             fetchData();
         }
 
-        // REMOVED default fetchData() call here to prevent initial load delay.
-
+        // 3. Event Listeners
         btnGenerate.addEventListener('click', fetchData);
 
         btnEmbed.addEventListener('click', () => {
-            document.getElementById('embed-area').style.display = 'block';
+            const area = document.getElementById('embed-area');
+            area.style.display = area.style.display === 'none' || area.style.display === '' ? 'block' : 'none';
+            updateEmbedCode('html'); // Default to HTML
         });
 
         btnCopy.addEventListener('click', () => {
-            const copyText = document.getElementById("embed-code");
-            copyText.select();
-            document.execCommand('copy'); // Legacy support
+            embedCodeArea.select();
+            document.execCommand('copy');
+            const originalText = btnCopy.textContent;
             btnCopy.textContent = "Copied!";
-            setTimeout(() => btnCopy.textContent = "Copy", 2000);
+            setTimeout(() => btnCopy.textContent = originalText, 2000);
         });
 
         btnDownload.addEventListener('click', downloadCard);
 
+        embedTabs.forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                // UI Toggle
+                embedTabs.forEach(t => t.classList.remove('active'));
+                e.target.classList.add('active');
+                // Content Toggle
+                updateEmbedCode(e.target.dataset.type);
+            });
+        });
+
+        // 4. Main Data Fetcher
         async function fetchData() {
             const tagInput = document.getElementById('battletag').value.trim();
             const platform = document.getElementById('platform').value;
             const region = document.getElementById('region').value;
 
-            if (!tagInput.includes('#')) {
+            if (!tagInput || !tagInput.includes('#')) {
                 setStatus("Please enter a valid BattleTag (Name#1234)", "error");
                 return;
             }
 
-            setStatus("Fetching player data...", "info");
+            setStatus("Fetching data...", "info", true);
+            currentTagForEmbed = tagInput; // Save for embed code generation
 
             // API needs '-' instead of '#'
             const formattedTag = tagInput.replace('#', '-');
-            
-            // Updated URL structure
             const url = `https://ow-api.com/v1/stats/${platform}/${region}/${formattedTag}/profile`;
 
+            // Timeout Logic (Fix for hanging requests)
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+
             try {
-                const response = await fetch(url);
+                const response = await fetch(url, { signal: controller.signal });
+                clearTimeout(timeoutId);
+
                 if(!response.ok) throw new Error("API Error");
                 const data = await response.json();
 
                 if (data.error) {
-                    setStatus("Player not found. Is the profile Private?", "error");
+                    setStatus("Player not found or Private Profile.", "error", false);
                     return;
                 }
 
                 if (data.private) {
-                    setStatus("Profile is Private. Some data may be hidden.", "info");
+                    setStatus("Profile is Private. Limited data shown.", "info", false);
                 } else {
-                    setStatus("Data loaded successfully!", "success");
+                    setStatus("", "success", false);
                 }
 
                 updateUI(data, tagInput);
 
             } catch (err) {
+                clearTimeout(timeoutId);
                 console.error(err);
-                setStatus("Failed to fetch data. Try again later or check Region.", "error");
+                if (err.name === 'AbortError') {
+                    setStatus("Request timed out. API is slow.", "error", false);
+                } else {
+                    setStatus("Failed to fetch. Check tag/region.", "error", false);
+                }
             }
         }
 
-        // Helper to fix CORS issues by routing through a proxy
+        // 5. UI Updates
         function getCorsProxyUrl(url) {
             if (!url) return '';
-            // We use images.weserv.nl which is a reliable public image proxy
-            // Added &w=200 to resize images, improving load performance
+            // Using weserv with compression to speed up load
             const cleanUrl = url.replace(/^https?:\/\//, '');
-            return `https://images.weserv.nl/?url=${cleanUrl}&output=png&w=200`;
+            return `https://images.weserv.nl/?url=${cleanUrl}&output=png&w=200&il`;
         }
 
         function updateUI(data, originalTag) {
@@ -449,15 +543,12 @@
             const icon = document.getElementById('playerIcon');
             const nameEl = document.getElementById('playerName');
             const titleEl = document.getElementById('playerTitle');
-            const embedBox = document.getElementById('embed-code');
 
-            // 1. Name
-            const displayName = data.name || originalTag.split('#')[0];
-            nameEl.textContent = displayName;
+            // Name
+            nameEl.textContent = data.name || originalTag.split('#')[0];
 
-            // 2. Subtitle / Title logic based on API Docs provided
+            // Title Logic
             let subText = "Player";
-            
             if (data.rating) {
                 subText = `Rating: ${data.rating}`;
             } else if (data.ratings && data.ratings.length > 0) {
@@ -467,27 +558,38 @@
             } else if (data.gamesWon) {
                 subText = `${data.gamesWon} Games Won`;
             }
-            
             titleEl.textContent = subText;
 
-            // 3. Icon (Using Proxy)
-            if (data.icon) {
-                icon.src = getCorsProxyUrl(data.icon);
-            }
-
-            // 4. Background (Nameplate) (Using Proxy)
+            // Images
+            if (data.icon) icon.src = getCorsProxyUrl(data.icon);
             const bgUrl = data.nameplate || data.levelIcon || "https://d15f34w2p8l1cc.cloudfront.net/overwatch/3fa9190e08a7903c0f4f303e0100fe4dbcfe61f3a42e426000adf871d61e8e94.png";
             card.style.backgroundImage = `url('${getCorsProxyUrl(bgUrl)}')`;
 
-            // 5. Update Embed Code
-            const encodedTag = encodeURIComponent(originalTag);
-            const embedStr = `<iframe src="${window.location.href.split('?')[0]}?user=${encodedTag}" width="600" height="150" style="border:none;"></iframe>`;
-            embedBox.value = embedStr;
+            // Update Embed Code if open
+            if(document.getElementById('embed-area').style.display === 'block') {
+                updateEmbedCode(document.querySelector('.tab-btn.active').dataset.type);
+            }
         }
 
-        function setStatus(msg, type) {
+        function updateEmbedCode(type) {
+            const encodedTag = encodeURIComponent(currentTagForEmbed);
+            const baseUrl = window.location.href.split('?')[0];
+            const directLink = `${baseUrl}?user=${encodedTag}`;
+
+            if (type === 'html') {
+                document.getElementById('embed-desc').textContent = "Copy this code to your website (Iframe):";
+                embedCodeArea.value = `<iframe src="${directLink}" width="600" height="150" style="border:none; overflow:hidden;" scrolling="no"></iframe>`;
+            } else {
+                document.getElementById('embed-desc').textContent = "Use this Badge Link for GitHub READMEs (Interactive widgets are not supported on GitHub):";
+                // Generates a Shields.io badge that LINKS to the card
+                embedCodeArea.value = `[![Overwatch Battle Card](https://img.shields.io/badge/Overwatch-View_Battle_Card-orange)](${directLink})`;
+            }
+        }
+
+        function setStatus(msg, type, isLoading) {
             statusDiv.textContent = msg;
             statusDiv.className = type;
+            loader.style.display = isLoading ? 'block' : 'none';
         }
 
         function downloadCard() {
@@ -496,6 +598,7 @@
             
             btnDownload.textContent = "Processing...";
             btnDownload.disabled = true;
+            setStatus("Rendering image...", "info", true);
 
             setTimeout(() => {
                 html2canvas(cardElement, {
@@ -510,13 +613,14 @@
                     link.click();
                     
                     btnDownload.textContent = "Downloaded!";
+                    setStatus("", "success", false);
                     setTimeout(() => {
                         btnDownload.textContent = originalBtnText;
                         btnDownload.disabled = false;
                     }, 2000);
                 }).catch(err => {
                     console.error("Canvas Error:", err);
-                    setStatus("Error saving image. Browser security blocked the external images.", "error");
+                    setStatus("Browser security blocked the image download.", "error", false);
                     btnDownload.textContent = originalBtnText;
                     btnDownload.disabled = false;
                 });
