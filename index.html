@@ -177,9 +177,6 @@
             display: flex;
             align-items: center;
             background-color: #333; /* Fallback */
-            background-repeat: no-repeat;
-            background-position: center;
-            background-size: cover;
             width: 600px;
             height: 150px;
             border-radius: 10px;
@@ -190,13 +187,27 @@
             border: 2px solid rgba(255,255,255,0.1);
         }
 
+        /* Dynamic Background Layer */
+        .player-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            z-index: 0;
+            /* Will be manipulated by JS for specific look */
+        }
+
         .player-overlay {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(90deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.8) 35%, rgba(255,255,255,0) 100%);
+            /* Gradient for text readability */
+            background: linear-gradient(90deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.85) 35%, rgba(255,255,255,0.2) 100%);
             z-index: 1;
         }
 
@@ -385,7 +396,11 @@
     <!-- The Card -->
     <div class="card-wrapper">
         <div id="battleCard" class="player-card">
+            <!-- New Background Layer -->
+            <div id="playerBg" class="player-bg"></div>
+            
             <div class="player-overlay"></div>
+            
             <!-- crossorigin="anonymous" is crucial for html2canvas to allow downloading images from external CDNs -->
             <img id="playerIcon" class="player-icon" src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Overwatch_circle_logo.svg/120px-Overwatch_circle_logo.svg.png" alt="Icon" crossorigin="anonymous" onerror="this.onerror=null;this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Overwatch_circle_logo.svg/120px-Overwatch_circle_logo.svg.png';">
             <div class="player-text">
@@ -415,7 +430,7 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {
-        console.log("Battle Card Generator Loaded");
+        console.log("Battle Card Generator Loaded v12 - Prominent Color BG");
 
         // Elements
         const btnGenerate = document.getElementById('generate-btn');
@@ -435,7 +450,7 @@
         let currentTagForEmbed = "Aarontendo"; // Default
 
         // --- Caching Configuration ---
-        const CACHE_KEY_PREFIX = "ow_card_data_v8_"; // Bumped version for robust fetch
+        const CACHE_KEY_PREFIX = "ow_card_data_v12_"; 
         const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 
         // 1. Auto-detect Region based on Timezone
@@ -467,12 +482,10 @@
 
         if (userParam) {
             console.log("Embed Mode Detected for:", userParam);
-            // Embed Mode Active
             battletagInput.value = userParam;
             document.body.classList.add('embed-mode');
             fetchData();
         } else {
-            // Show warning about private profiles by default in main view
             warningDiv.style.display = "block";
         }
 
@@ -497,10 +510,8 @@
 
         embedTabs.forEach(tab => {
             tab.addEventListener('click', (e) => {
-                // UI Toggle
                 embedTabs.forEach(t => t.classList.remove('active'));
                 e.target.classList.add('active');
-                // Content Toggle
                 updateEmbedCode(e.target.dataset.type);
             });
         });
@@ -512,7 +523,7 @@
                 if (!item) return null;
                 const record = JSON.parse(item);
                 if (Date.now() - record.timestamp > CACHE_DURATION) {
-                    localStorage.removeItem(CACHE_KEY_PREFIX + tag); // Expired
+                    localStorage.removeItem(CACHE_KEY_PREFIX + tag); 
                     return null;
                 }
                 return record.data;
@@ -545,11 +556,7 @@
                 return;
             }
 
-            // ow-api needs '-' instead of '#'
             const formattedTag = tagInput.replace('#', '-');
-            
-            // FALLBACK LOGIC: If input is Name#1234, we also want to try just "Name" if the first one fails
-            // This handles cases where user provides the number but the API index only uses the name
             const strippedTag = formattedTag.split('-')[0]; 
             const tagsToTry = [formattedTag];
             if (formattedTag !== strippedTag) {
@@ -570,12 +577,12 @@
             let successfulRegion = selectedRegion;
 
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 30000); 
+            const timeoutId = setTimeout(() => controller.abort(), 45000); 
 
             try {
-                // Outer loop: Tags (Full Tag -> Stripped Tag)
+                // Outer loop: Tags 
                 tagLoop: for (const tag of tagsToTry) {
-                    // Inner loop: Regions (US -> EU -> Asia)
+                    // Inner loop: Regions 
                     for (const region of regionsToTry) {
                         const cacheKey = `${platform}_${region}_${tag}`;
                         const cachedData = getFromCache(cacheKey);
@@ -587,7 +594,6 @@
                         }
 
                         try {
-                            // Using /complete endpoint
                             const url = `https://ow-api.com/v1/stats/${platform}/${region}/${tag}/complete`;
                             console.log(`Trying: ${url}`);
                             
@@ -595,17 +601,15 @@
                             
                             if (response.ok) {
                                 const data = await response.json();
-                                // API check for valid data
+                                // Check for name to ensure it's not a false positive
                                 if (!data.error && data.name) {
                                     foundData = data;
                                     successfulRegion = region;
                                     saveToCache(cacheKey, data);
-                                    break tagLoop; // Found it! Break everything
+                                    break tagLoop;
                                 }
                             }
-                        } catch (e) {
-                            // Continue to next combo
-                        }
+                        } catch (e) { }
                     }
                 }
                 
@@ -641,33 +645,28 @@
         }
 
         function updateUI(data, originalTag) {
-            const card = document.getElementById('battleCard');
+            const bgLayer = document.getElementById('playerBg');
             const icon = document.getElementById('playerIcon');
             const nameEl = document.getElementById('playerName');
             const titleEl = document.getElementById('playerTitle');
 
-            // --- ow-api.com Data Mapping ---
-            
             // Name
             nameEl.textContent = data.name || originalTag.split('#')[0];
 
-            // Title Logic
+            // Title Logic - Robust handling for sparse data
             let subText = "Player";
             
-            // 1. Competitive Rank (OW2 structure)
             if (data.ratings && data.ratings.length > 0) {
                  const role = data.ratings[0];
                  subText = `${role.role.toUpperCase()}: ${role.group || ''} ${role.tier || ''}`;
             } 
-            // 2. Old Rating system fallback
             else if (data.rating) {
                 subText = `Rating: ${data.rating}`;
             } 
-            // 3. Games Won
-            else if (data.gamesWon) {
+            // Use strict comparison for gamesWon so 0 doesn't falsely trigger if data is missing
+            else if (data.gamesWon && data.gamesWon > 0) {
                 subText = `${data.gamesWon} Games Won`;
             }
-            // 4. Endorsement
             else if (data.endorsement) {
                 subText = `Endorsement Level ${data.endorsement}`;
             }
@@ -675,13 +674,25 @@
             titleEl.textContent = subText;
 
             // Images
-            if (data.icon) icon.src = getCorsProxyUrl(data.icon);
-            
-            // Background priority
-            const bgUrl = data.nameplate || data.levelIcon || "https://d15f34w2p8l1cc.cloudfront.net/overwatch/3fa9190e08a7903c0f4f303e0100fe4dbcfe61f3a42e426000adf871d61e8e94.png";
-            card.style.backgroundImage = `url('${getCorsProxyUrl(bgUrl)}')`;
+            if (data.icon) {
+                const iconUrl = getCorsProxyUrl(data.icon);
+                icon.src = iconUrl;
+                
+                // Background Logic (Prominent Colors):
+                // We use the player's icon as the background, zoomed in significantly
+                // and heavily blurred/saturated. this creates a colorful abstract
+                // background that matches the player's icon color scheme exactly.
+                bgLayer.style.backgroundImage = `url('${iconUrl}')`;
+                bgLayer.style.filter = "blur(25px) saturate(200%) brightness(0.5)";
+                bgLayer.style.transform = "scale(1.5)"; 
+            } else {
+                // Absolute fallback
+                bgLayer.style.backgroundColor = "#333";
+                bgLayer.style.backgroundImage = "none";
+                icon.src = "https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Overwatch_circle_logo.svg/120px-Overwatch_circle_logo.svg.png";
+            }
 
-            // Update Embed Code if open
+            // Update Embed Code
             if(document.getElementById('embed-area').style.display === 'block') {
                 updateEmbedCode(document.querySelector('.tab-btn.active').dataset.type);
             }
@@ -699,7 +710,6 @@
                 embedDesc.textContent = "Use this Badge Link for GitHub READMEs:";
                 embedCodeArea.value = `[![Overwatch Battle Card](https://img.shields.io/badge/Overwatch-View_Battle_Card-orange)](${directLink})`;
             } else if (type === 'auto') {
-                // Ensure the wait time is long enough for the new retry logic
                 embedCodeArea.value = `name: Update Battle Card
 on:
   schedule:
@@ -723,8 +733,7 @@ jobs:
           shot-scraper install
       - name: Take Screenshot
         run: |
-          # Waits 15s to allow for API retries and targets specific element
-          shot-scraper "${directLink}" --selector "#battleCard" -o profile-card.png --wait 15000
+          shot-scraper "${directLink}" --selector "#battleCard" -o profile-card.png --wait 25000
       - name: Commit and Push
         run: |-
           git config user.name "Automated"
