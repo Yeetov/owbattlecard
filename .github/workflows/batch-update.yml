@@ -60,14 +60,14 @@ jobs:
               url = f"https://yeetov.github.io/owbattlecard/?user={encoded_user}"
               
               # Run shot-scraper
-              # We use a 25s wait to allow the webpage's internal retry logic to cycle through US/EU/Asia regions
+              # We use a 2s wait to allow the webpage's internal retry logic to cycle through US/EU/Asia regions
               cmd = [
                   "shot-scraper", url,
                   "--selector", "#battleCard",
                   "-o", filename,
                   "--width", "600",
                   "--height", "150",
-                  "--wait", "25000", 
+                  "--wait", "2000", 
                   "--retina"
               ]
               
