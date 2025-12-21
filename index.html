@@ -415,6 +415,8 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {
+        console.log("Battle Card Generator Loaded");
+
         // Elements
         const btnGenerate = document.getElementById('generate-btn');
         const btnDownload = document.getElementById('download-btn');
@@ -433,7 +435,7 @@
         let currentTagForEmbed = "Aarontendo"; // Default
 
         // --- Caching Configuration ---
-        const CACHE_KEY_PREFIX = "ow_card_data_v6_"; // Bumped version for ow-api
+        const CACHE_KEY_PREFIX = "ow_card_data_v8_"; // Bumped version for robust fetch
         const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 
         // 1. Auto-detect Region based on Timezone
@@ -464,6 +466,7 @@
         }
 
         if (userParam) {
+            console.log("Embed Mode Detected for:", userParam);
             // Embed Mode Active
             battletagInput.value = userParam;
             document.body.classList.add('embed-mode');
@@ -544,16 +547,22 @@
 
             // ow-api needs '-' instead of '#'
             const formattedTag = tagInput.replace('#', '-');
+            
+            // FALLBACK LOGIC: If input is Name#1234, we also want to try just "Name" if the first one fails
+            // This handles cases where user provides the number but the API index only uses the name
+            const strippedTag = formattedTag.split('-')[0]; 
+            const tagsToTry = [formattedTag];
+            if (formattedTag !== strippedTag) {
+                tagsToTry.push(strippedTag);
+            }
 
             setStatus("Fetching data (ow-api)...", "info", true);
             currentTagForEmbed = tagInput; 
 
-            // Region Retry Strategy (crucial for ow-api)
-            // Even if user is 'US', data might be in 'EU' bucket
+            // Region Retry Strategy
             let regionsToTry = [selectedRegion];
             if (platform === 'pc') {
                 const allRegions = ['us', 'eu', 'asia'];
-                // Create unique list starting with selected region
                 regionsToTry = [...new Set([selectedRegion, ...allRegions])];
             }
 
@@ -561,39 +570,42 @@
             let successfulRegion = selectedRegion;
 
             const controller = new AbortController();
-            // Longer timeout for /complete endpoint
-            const timeoutId = setTimeout(() => controller.abort(), 25000); 
+            const timeoutId = setTimeout(() => controller.abort(), 30000); 
 
             try {
-                // Loop through regions to find the player
-                for (const region of regionsToTry) {
-                    const cacheKey = `${platform}_${region}_${formattedTag}`;
-                    const cachedData = getFromCache(cacheKey);
-                    
-                    if (cachedData) {
-                        foundData = cachedData;
-                        successfulRegion = region;
-                        break;
-                    }
-
-                    try {
-                        // Using /complete endpoint as verified by user
-                        const url = `https://ow-api.com/v1/stats/${platform}/${region}/${formattedTag}/complete`;
+                // Outer loop: Tags (Full Tag -> Stripped Tag)
+                tagLoop: for (const tag of tagsToTry) {
+                    // Inner loop: Regions (US -> EU -> Asia)
+                    for (const region of regionsToTry) {
+                        const cacheKey = `${platform}_${region}_${tag}`;
+                        const cachedData = getFromCache(cacheKey);
                         
-                        const response = await fetch(url, { signal: controller.signal });
-                        
-                        if (response.ok) {
-                            const data = await response.json();
-                            // API returns 200 even for some errors, check body for 'name' presence
-                            if (!data.error && data.name) {
-                                foundData = data;
-                                successfulRegion = region;
-                                saveToCache(cacheKey, data);
-                                break; // Success! Stop loop
-                            }
+                        if (cachedData) {
+                            foundData = cachedData;
+                            successfulRegion = region;
+                            break tagLoop;
                         }
-                    } catch (e) {
-                        // Continue to next region
+
+                        try {
+                            // Using /complete endpoint
+                            const url = `https://ow-api.com/v1/stats/${platform}/${region}/${tag}/complete`;
+                            console.log(`Trying: ${url}`);
+                            
+                            const response = await fetch(url, { signal: controller.signal });
+                            
+                            if (response.ok) {
+                                const data = await response.json();
+                                // API check for valid data
+                                if (!data.error && data.name) {
+                                    foundData = data;
+                                    successfulRegion = region;
+                                    saveToCache(cacheKey, data);
+                                    break tagLoop; // Found it! Break everything
+                                }
+                            }
+                        } catch (e) {
+                            // Continue to next combo
+                        }
                     }
                 }
                 
@@ -687,6 +699,7 @@
                 embedDesc.textContent = "Use this Badge Link for GitHub READMEs:";
                 embedCodeArea.value = `[![Overwatch Battle Card](https://img.shields.io/badge/Overwatch-View_Battle_Card-orange)](${directLink})`;
             } else if (type === 'auto') {
+                // Ensure the wait time is long enough for the new retry logic
                 embedCodeArea.value = `name: Update Battle Card
 on:
   schedule:
@@ -710,8 +723,8 @@ jobs:
           shot-scraper install
       - name: Take Screenshot
         run: |
-          # Waits 10s for API retries across regions
-          shot-scraper "${directLink}" -o profile-card.png --width 600 --height 150 --wait 10000
+          # Waits 15s to allow for API retries and targets specific element
+          shot-scraper "${directLink}" --selector "#battleCard" -o profile-card.png --wait 15000
       - name: Commit and Push
         run: |-
           git config user.name "Automated"
