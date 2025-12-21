@@ -19,7 +19,6 @@
             margin: 0;
             padding: 0;
             width: 100%;
-            /* Fix for embed scrolling */
         }
 
         body {
@@ -43,6 +42,7 @@
             margin-bottom: 5px;
             font-style: italic;
             letter-spacing: 2px;
+            text-align: center;
         }
 
         .subtitle {
@@ -76,6 +76,10 @@
             color: white;
             font-size: 1rem;
             outline: none;
+        }
+
+        input {
+            width: 200px;
         }
 
         input:focus, select:focus {
@@ -124,12 +128,15 @@
 
         /* --- Status Messages & Loader --- */
         #status-container {
-            height: 30px;
+            height: auto;
+            min-height: 30px;
             margin-bottom: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
+            flex-direction: column;
+            text-align: center;
         }
         
         #status-msg {
@@ -154,11 +161,11 @@
         .error { color: #ff4d4d; }
         .success { color: #4dff88; }
         .info { color: #4db8ff; }
+        .warning { color: #ffcc00; font-size: 0.9em; margin-top: 5px;}
 
         /* --- Card Styles --- */
         .card-wrapper {
             margin-bottom: 20px;
-            /* Wrapper ensures padding doesn't mess up html2canvas screenshot boundaries */
             padding: 10px; 
             border: 1px dashed #333;
             border-radius: 12px;
@@ -179,7 +186,7 @@
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
             padding-left: 170px;
             overflow: hidden;
-            box-sizing: border-box; /* Important for width calculation */
+            box-sizing: border-box;
             border: 2px solid rgba(255,255,255,0.1);
         }
 
@@ -189,7 +196,6 @@
             left: 0;
             width: 100%;
             height: 100%;
-            /* Gradient to make text readable regardless of background image */
             background: linear-gradient(90deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.8) 35%, rgba(255,255,255,0) 100%);
             z-index: 1;
         }
@@ -204,7 +210,7 @@
             border: 4px solid white;
             background-color: #000;
             z-index: 2;
-            border-radius: 8px; /* Slightly rounded corners look more modern */
+            border-radius: 8px;
             object-fit: cover;
         }
 
@@ -227,6 +233,10 @@
             line-height: 0.9;
             letter-spacing: 1px;
             color: #333;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 400px;
         }
 
         .player-title {
@@ -331,7 +341,6 @@
                 margin: -30px 0;
             }
             h1 { font-size: 2rem; }
-            /* Don't scale in embed mode if iframe is small, let the iframe size handle it */
             body.embed-mode .card-wrapper {
                 transform: scale(0.8); 
                 margin: 0;
@@ -346,16 +355,18 @@
 
     <!-- Input Section -->
     <div class="search-container">
-        <input type="text" id="battletag" placeholder="Name#1234">
+        <input type="text" id="battletag" placeholder="Name#1234 (Case Sensitive!)">
         
         <select id="platform">
             <option value="pc">PC</option>
-            <option value="console">Console</option>
+            <option value="psn">PlayStation</option>
+            <option value="xbl">Xbox Live</option>
+            <option value="nintendo-switch">Nintendo Switch</option>
         </select>
         
         <select id="region">
-            <option value="us">US</option>
-            <option value="eu">EU</option>
+            <option value="us">Americas (US)</option>
+            <option value="eu">Europe (EU)</option>
             <option value="asia">Asia</option>
         </select>
 
@@ -365,6 +376,10 @@
     <div id="status-container">
         <div class="loader" id="loader"></div>
         <div id="status-msg"></div>
+        <div id="private-warning" class="warning" style="display:none;">
+            Note: If you get a 404, your OW2 Profile is likely set to <strong>Private</strong>.<br>
+            Go to Options > Social > Career Profile Visibility > Set to "Public".
+        </div>
     </div>
 
     <!-- The Card -->
@@ -372,11 +387,10 @@
         <div id="battleCard" class="player-card">
             <div class="player-overlay"></div>
             <!-- crossorigin="anonymous" is crucial for html2canvas to allow downloading images from external CDNs -->
-            <!-- fallback onerror logic to prevent broken image icons -->
             <img id="playerIcon" class="player-icon" src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Overwatch_circle_logo.svg/120px-Overwatch_circle_logo.svg.png" alt="Icon" crossorigin="anonymous" onerror="this.onerror=null;this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Overwatch_circle_logo.svg/120px-Overwatch_circle_logo.svg.png';">
             <div class="player-text">
                 <div id="playerName" class="player-name">PLAYER</div>
-                <div id="playerTitle" class="player-title">LEVEL 0</div>
+                <div id="playerTitle" class="player-title">READY TO PLAY</div>
             </div>
         </div>
     </div>
@@ -407,17 +421,19 @@
         const btnEmbed = document.getElementById('show-embed-btn');
         const btnCopy = document.getElementById('copy-btn');
         const statusDiv = document.getElementById('status-msg');
+        const warningDiv = document.getElementById('private-warning');
         const loader = document.getElementById('loader');
         const regionSelect = document.getElementById('region');
+        const platformSelect = document.getElementById('platform');
         const battletagInput = document.getElementById('battletag');
         const embedTabs = document.querySelectorAll('.tab-btn');
         const embedCodeArea = document.getElementById('embed-code');
         const embedDesc = document.getElementById('embed-desc');
         
-        let currentTagForEmbed = "Aarontendo#2585"; // Default
+        let currentTagForEmbed = "Aarontendo"; // Default
 
         // --- Caching Configuration ---
-        const CACHE_KEY_PREFIX = "ow_card_data_";
+        const CACHE_KEY_PREFIX = "ow_card_data_v6_"; // Bumped version for ow-api
         const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 
         // 1. Auto-detect Region based on Timezone
@@ -452,6 +468,9 @@
             battletagInput.value = userParam;
             document.body.classList.add('embed-mode');
             fetchData();
+        } else {
+            // Show warning about private profiles by default in main view
+            warningDiv.style.display = "block";
         }
 
         // 3. Event Listeners
@@ -516,65 +535,88 @@
         async function fetchData() {
             const tagInput = document.getElementById('battletag').value.trim();
             const platform = document.getElementById('platform').value;
-            const region = document.getElementById('region').value;
+            const selectedRegion = document.getElementById('region').value;
 
-            if (!tagInput || !tagInput.includes('#')) {
-                setStatus("Please enter a valid BattleTag (Name#1234)", "error");
+            if (!tagInput) {
+                setStatus("Please enter a valid BattleTag", "error");
                 return;
             }
 
-            // API needs '-' instead of '#'
+            // ow-api needs '-' instead of '#'
             const formattedTag = tagInput.replace('#', '-');
 
-            // --- INSTANT CACHE CHECK ---
-            const cachedData = getFromCache(formattedTag);
-            if (cachedData) {
-                // Instant load
-                setStatus("", "success", false); // Clear loading
-                updateUI(cachedData, tagInput);
-                currentTagForEmbed = tagInput;
-                return; 
+            setStatus("Fetching data (ow-api)...", "info", true);
+            currentTagForEmbed = tagInput; 
+
+            // Region Retry Strategy (crucial for ow-api)
+            // Even if user is 'US', data might be in 'EU' bucket
+            let regionsToTry = [selectedRegion];
+            if (platform === 'pc') {
+                const allRegions = ['us', 'eu', 'asia'];
+                // Create unique list starting with selected region
+                regionsToTry = [...new Set([selectedRegion, ...allRegions])];
             }
 
-            setStatus("Fetching data...", "info", true);
-            currentTagForEmbed = tagInput; // Save for embed code generation
+            let foundData = null;
+            let successfulRegion = selectedRegion;
 
-            
-            const url = `https://ow-api.com/v1/stats/${platform}/${region}/${formattedTag}/profile`;
-
-            // Timeout Logic (Fix for hanging requests)
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+            // Longer timeout for /complete endpoint
+            const timeoutId = setTimeout(() => controller.abort(), 25000); 
 
             try {
-                const response = await fetch(url, { signal: controller.signal });
+                // Loop through regions to find the player
+                for (const region of regionsToTry) {
+                    const cacheKey = `${platform}_${region}_${formattedTag}`;
+                    const cachedData = getFromCache(cacheKey);
+                    
+                    if (cachedData) {
+                        foundData = cachedData;
+                        successfulRegion = region;
+                        break;
+                    }
+
+                    try {
+                        // Using /complete endpoint as verified by user
+                        const url = `https://ow-api.com/v1/stats/${platform}/${region}/${formattedTag}/complete`;
+                        
+                        const response = await fetch(url, { signal: controller.signal });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            // API returns 200 even for some errors, check body for 'name' presence
+                            if (!data.error && data.name) {
+                                foundData = data;
+                                successfulRegion = region;
+                                saveToCache(cacheKey, data);
+                                break; // Success! Stop loop
+                            }
+                        }
+                    } catch (e) {
+                        // Continue to next region
+                    }
+                }
+                
                 clearTimeout(timeoutId);
 
-                if(!response.ok) throw new Error("API Error");
-                const data = await response.json();
-
-                if (data.error) {
-                    setStatus("Player not found or Private Profile.", "error", false);
-                    return;
-                }
-
-                if (data.private) {
-                    setStatus("Profile is Private. Limited data shown.", "info", false);
+                if (foundData) {
+                    if (foundData.private) {
+                        setStatus("Profile is Private (Limited data).", "info", false);
+                    } else {
+                        setStatus(`Success! (Found in ${successfulRegion.toUpperCase()})`, "success", false);
+                    }
+                    updateUI(foundData, tagInput);
                 } else {
-                    setStatus("", "success", false);
+                    throw new Error("Profile not found. Check Name, Region, or Privacy.");
                 }
-
-                // Save to Cache & Update UI
-                saveToCache(formattedTag, data);
-                updateUI(data, tagInput);
 
             } catch (err) {
                 clearTimeout(timeoutId);
-                console.error(err);
+                console.warn("Fetch failed:", err);
                 if (err.name === 'AbortError') {
                     setStatus("Request timed out. API is slow.", "error", false);
                 } else {
-                    setStatus("Failed to fetch. Check tag/region.", "error", false);
+                    setStatus("Profile not found. Check spelling (Case-Sensitive) or set to Public.", "error", false);
                 }
             }
         }
@@ -582,7 +624,6 @@
         // 5. UI Updates
         function getCorsProxyUrl(url) {
             if (!url) return '';
-            // Using weserv with compression to speed up load
             const cleanUrl = url.replace(/^https?:\/\//, '');
             return `https://images.weserv.nl/?url=${cleanUrl}&output=png&w=200&il`;
         }
@@ -593,24 +634,38 @@
             const nameEl = document.getElementById('playerName');
             const titleEl = document.getElementById('playerTitle');
 
+            // --- ow-api.com Data Mapping ---
+            
             // Name
             nameEl.textContent = data.name || originalTag.split('#')[0];
 
             // Title Logic
             let subText = "Player";
-            if (data.rating) {
+            
+            // 1. Competitive Rank (OW2 structure)
+            if (data.ratings && data.ratings.length > 0) {
+                 const role = data.ratings[0];
+                 subText = `${role.role.toUpperCase()}: ${role.group || ''} ${role.tier || ''}`;
+            } 
+            // 2. Old Rating system fallback
+            else if (data.rating) {
                 subText = `Rating: ${data.rating}`;
-            } else if (data.ratings && data.ratings.length > 0) {
-                subText = `${data.ratings[0].role.toUpperCase()}: ${data.ratings[0].group}`;
-            } else if (data.endorsement) {
-                subText = `Endorsement Level ${data.endorsement}`;
-            } else if (data.gamesWon) {
+            } 
+            // 3. Games Won
+            else if (data.gamesWon) {
                 subText = `${data.gamesWon} Games Won`;
             }
+            // 4. Endorsement
+            else if (data.endorsement) {
+                subText = `Endorsement Level ${data.endorsement}`;
+            }
+            
             titleEl.textContent = subText;
 
             // Images
             if (data.icon) icon.src = getCorsProxyUrl(data.icon);
+            
+            // Background priority
             const bgUrl = data.nameplate || data.levelIcon || "https://d15f34w2p8l1cc.cloudfront.net/overwatch/3fa9190e08a7903c0f4f303e0100fe4dbcfe61f3a42e426000adf871d61e8e94.png";
             card.style.backgroundImage = `url('${getCorsProxyUrl(bgUrl)}')`;
 
@@ -632,12 +687,10 @@
                 embedDesc.textContent = "Use this Badge Link for GitHub READMEs:";
                 embedCodeArea.value = `[![Overwatch Battle Card](https://img.shields.io/badge/Overwatch-View_Battle_Card-orange)](${directLink})`;
             } else if (type === 'auto') {
-                embedDesc.textContent = "GitHub READMEs cannot run JavaScript. To display a dynamic image, you must use a GitHub Action to automatically screenshot this page daily and save the image to your repository. Create a '.github/workflows/update-card.yml' file with this content:";
-                // Generate the workflow YAML specifically for this URL
                 embedCodeArea.value = `name: Update Battle Card
 on:
   schedule:
-    - cron: '0 0 * * *' # Runs daily at midnight
+    - cron: '0 0 * * *'
   workflow_dispatch:
 
 jobs:
@@ -657,7 +710,8 @@ jobs:
           shot-scraper install
       - name: Take Screenshot
         run: |
-          shot-scraper "${directLink}" -o profile-card.png --width 600 --height 150 --wait 3000
+          # Waits 10s for API retries across regions
+          shot-scraper "${directLink}" -o profile-card.png --width 600 --height 150 --wait 10000
       - name: Commit and Push
         run: |-
           git config user.name "Automated"
@@ -695,18 +749,18 @@ jobs:
                     link.click();
                     
                     btnDownload.textContent = "Downloaded!";
+                    btnDownload.disabled = false;
                     setStatus("", "success", false);
                     setTimeout(() => {
                         btnDownload.textContent = originalBtnText;
-                        btnDownload.disabled = false;
-                    }, 2000);
-                }).catch(err => {
-                    console.error("Canvas Error:", err);
-                    setStatus("Browser security blocked the image download.", "error", false);
-                    btnDownload.textContent = originalBtnText;
-                    btnDownload.disabled = false;
+                    }, 3000);
+                }).catch(e => {
+                     console.error(e);
+                     btnDownload.textContent = "Error";
+                     btnDownload.disabled = false;
+                     setStatus("Failed to create image. CORS issue?", "error", false);
                 });
-            }, 500);
+            }, 100);
         }
     });
 </script>
