@@ -1,0 +1,86 @@
+name: Global Card Cache Service
+on:
+  schedule:
+    - cron: '0 8 * * *' # Runs daily at 8am UTC
+  workflow_dispatch: # Allows manual trigger button
+
+permissions:
+  contents: write
+
+jobs:
+  update-cache:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install shot-scraper
+
+      - name: Install Playwright browsers
+        run: |
+          shot-scraper install
+
+      - name: Create cards directory
+        run: mkdir -p cards
+
+      - name: Generate Cards from users.txt
+        shell: python
+        run: |
+          import os
+          import subprocess
+          import urllib.parse
+          import time
+
+          # 1. Read users
+          try:
+              with open('users.txt', 'r') as f:
+                  users = [line.strip() for line in f if line.strip() and not line.startswith('#')]
+          except FileNotFoundError:
+              print("users.txt not found!")
+              exit(1)
+
+          print(f"Found {len(users)} users to process.")
+
+          # 2. Process each user
+          for user in users:
+              print(f"--- Processing: {user} ---")
+              
+              # Prepare Filename (Replace # with - for clean URLs)
+              safe_name = user.replace('#', '-')
+              filename = f"cards/{safe_name}.png"
+              
+              # Prepare URL (Encode # as %23 for query param)
+              encoded_user = urllib.parse.quote(user)
+              url = f"https://yeetov.github.io/owbattlecard/?user={encoded_user}"
+              
+              # Run shot-scraper
+              # We use a 25s wait to allow the webpage's internal retry logic to cycle through US/EU/Asia regions
+              cmd = [
+                  "shot-scraper", url,
+                  "--selector", "#battleCard",
+                  "-o", filename,
+                  "--width", "600",
+                  "--height", "150",
+                  "--wait", "25000", 
+                  "--retina"
+              ]
+              
+              try:
+                  subprocess.run(cmd, check=True)
+                  print(f"✅ Saved to {filename}")
+              except subprocess.CalledProcessError:
+                  print(f"❌ Failed to capture {user}")
+
+      - name: Commit and Push
+        run: |-
+          git config user.name "CardCacheBot"
+          git config user.email "actions@users.noreply.github.com"
+          git add cards/
+          git commit -m "Update public card cache" || exit 0
+          git push
